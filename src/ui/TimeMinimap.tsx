@@ -63,6 +63,15 @@ export function TimeMinimap() {
   const [hoverSubId, setHoverSubId] = useState<string | null>(null)
   const [reducedMotion, setReducedMotion] = useState(false)
 
+  /** Primary = compact strip; expanded on hover, focus-within, drag, or pin. */
+  const [shellHover, setShellHover] = useState(false)
+  const [focusWithinShell, setFocusWithinShell] = useState(false)
+  const [pinnedExpanded, setPinnedExpanded] = useState(false)
+  const shellRef = useRef<HTMLDivElement>(null)
+
+  const uiExpanded =
+    shellHover || dragging || focusWithinShell || pinnedExpanded
+
   const focusedMacro = timeMinimapMacroId
     ? getMacroEraById(timeMinimapMacroId)
     : undefined
@@ -213,7 +222,30 @@ export function TimeMinimap() {
   const ariaMax = isLocal && focusedMacro ? focusedMacro.end : TIMELINE_YEAR_MAX
 
   return (
-    <div className="terris-time-minimap">
+    <div
+      ref={shellRef}
+      className={
+        'terris-time-minimap-shell' +
+        (uiExpanded ? ' terris-time-minimap-shell--expanded' : '')
+      }
+      onMouseEnter={() => setShellHover(true)}
+      onMouseLeave={() => {
+        if (!dragging) setShellHover(false)
+      }}
+      onFocusCapture={() => setFocusWithinShell(true)}
+      onBlurCapture={(e) => {
+        const next = e.relatedTarget as Node | null
+        if (next && shellRef.current?.contains(next)) return
+        setFocusWithinShell(false)
+      }}
+    >
+      <div
+        className={
+          'terris-time-minimap' +
+          (uiExpanded ? ' terris-time-minimap--expanded' : ' terris-time-minimap--compact')
+        }
+        data-expanded={uiExpanded}
+      >
       <div className="terris-time-minimap__header">
         <div className="terris-time-minimap__header-left">
           {isLocal ? (
@@ -235,6 +267,19 @@ export function TimeMinimap() {
           </span>
         </div>
         <div className="terris-time-minimap__header-right">
+          <button
+            type="button"
+            className="terris-time-minimap__pin"
+            aria-expanded={uiExpanded}
+            aria-label={pinnedExpanded ? 'Minimize timeline panel' : 'Pin timeline panel open'}
+            title={pinnedExpanded ? 'Minimize' : 'Pin open'}
+            onClick={(e) => {
+              e.stopPropagation()
+              setPinnedExpanded((p) => !p)
+            }}
+          >
+            {pinnedExpanded ? '▾' : '▴'}
+          </button>
           <span className="terris-time-minimap__context">
             {displayMacro.label}
             {isLocal ? <span className="terris-time-minimap__context-mark"> · detail</span> : null}
@@ -422,6 +467,7 @@ export function TimeMinimap() {
               </span>
             )
           })}
+      </div>
       </div>
     </div>
   )

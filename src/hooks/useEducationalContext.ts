@@ -1,35 +1,29 @@
 import { useMemo } from 'react'
-import { CONTEXT_MODE_PROFILES, resolvePlaceSheetTabs } from '@/config/contextModeConfig'
+import {
+  DEFAULT_METADATA_COMPACT,
+  EMPTY_PLACE_SHEET_TEASER,
+  resolvePlaceSheetTabs,
+} from '@/config/terrisPresentationConfig'
 import { useTerrisStore } from '@/state/useTerrisStore'
 import type { PlaceSheetTabId } from '@/ui/placeSheetTypes'
 
 /**
- * Derives presentation flags from context mode + content depth (single shell, adaptive chrome).
+ * Derives place-sheet tabs and density from content depth (single presentation model).
  */
 export function useEducationalContext() {
-  const contextMode = useTerrisStore((s) => s.contextMode)
   const contentDepth = useTerrisStore((s) => s.contentDepth)
-  const readingLevel = useTerrisStore((s) => s.readingLevel)
-  const lockedNavigation = useTerrisStore((s) => s.lockedNavigation)
-
-  const profile = CONTEXT_MODE_PROFILES[contextMode]
 
   const visiblePlaceSheetTabs: PlaceSheetTabId[] = useMemo(
-    () => resolvePlaceSheetTabs(contextMode, contentDepth),
-    [contextMode, contentDepth],
+    () => resolvePlaceSheetTabs(contentDepth),
+    [contentDepth],
   )
 
-  const metadataCompact =
-    profile.metadataCompact && contentDepth !== 'deep'
+  const metadataCompact = DEFAULT_METADATA_COMPACT && contentDepth !== 'deep'
 
   const overviewShowsFullStory = contentDepth !== 'quick'
 
   return {
-    contextMode,
-    contentDepth,
-    readingLevel,
-    lockedNavigation,
-    profile,
+    emptyPlaceTeaser: EMPTY_PLACE_SHEET_TEASER,
     visiblePlaceSheetTabs,
     metadataCompact,
     overviewShowsFullStory,

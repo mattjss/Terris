@@ -9,6 +9,7 @@ import { EarthProcedural } from './EarthProcedural'
 import { CloudsLayer } from './CloudsLayer'
 import { Atmosphere } from './Atmosphere'
 import { StarField } from './StarField'
+import { GlobeLights } from './GlobeLights'
 import { HistoricalMarkers } from './HistoricalMarkers'
 import { TerrisPoiMarkers } from './TerrisPoiMarkers'
 import { BoundaryPolygons } from './BoundaryPolygons'
@@ -16,6 +17,12 @@ import { TradeRoutes } from './TradeRoutes'
 import { Coastlines } from './Coastlines'
 import { LandOutlines } from './LandOutlines'
 import { GLOBE_RADIUS, GLOBE_WORLD_CENTER } from './globeConstants'
+
+const ORBIT_TARGET: [number, number, number] = [
+  GLOBE_WORLD_CENTER.x,
+  GLOBE_WORLD_CENTER.y,
+  GLOBE_WORLD_CENTER.z,
+]
 import { syncHoveredCoordsFromEarthMesh } from './globeEarthHover'
 import { useExploreScaleStore } from '@/state/exploreScaleStore'
 import { useAtlasStore } from '@/store/atlas'
@@ -25,6 +32,12 @@ import { vec3ToLatLng } from '@/lib/geoToThree'
 import { CosmicPlaceholder } from './CosmicPlaceholder'
 import { ExploreScaleBridge } from './ExploreScaleBridge'
 import { SolarSystemPlaceholder } from './SolarSystemPlaceholder'
+import { GLOBE_AUTO_ROTATE_SPEED } from './globeRenderConstants'
+import { GlobeBackground } from './GlobeBackground'
+import { GlobeVisualBlendDriver } from './GlobeVisualBlendDriver'
+import { GlobeOrbitVisualTuning } from './GlobeOrbitVisualTuning'
+import { globeVisualBlendRef } from '@/state/globeVisualBlendRef'
+import { getGlobeVisualSnapshot } from './globeVisualPresets'
 
 const _dir = new THREE.Vector3()
 const _globeCenter = new THREE.Vector3(
@@ -125,7 +138,9 @@ export function GlobeScene() {
 
     const exploreSuspended = useExploreScaleStore.getState().controlsSuspended
     if (!exploreSuspended && targetPos.current) {
-      const factor = reducedMotion ? 1 : 0.025
+      const factor = reducedMotion
+        ? 1
+        : getGlobeVisualSnapshot(globeVisualBlendRef.current).cameraLerpFactor
       camera.position.lerp(targetPos.current, factor)
       if (camera.position.distanceTo(targetPos.current) < 0.015) {
         targetPos.current = null
@@ -137,22 +152,33 @@ export function GlobeScene() {
     const now = performance.now()
     if (now - lastGlobeViewSync.current >= GLOBE_VIEW_SYNC_MS) {
       lastGlobeViewSync.current = now
+      /** Orbit distance — always track for Earth / planetary / cosmic thresholds (ExploreScaleBridge). */
+      const dist = camera.position.distanceTo(_globeCenter)
       _raycaster.setFromCamera(_screenCenterNdc, camera)
       const hitCenter = _raycaster.ray.intersectSphere(_globeSphere, _rayHit)
+      let centerLat: number
+      let centerLng: number
       if (hitCenter) {
         const local = _rayHit.clone().sub(_globeCenter)
-        const { lat, lng } = vec3ToLatLng(local)
-        const dist = camera.position.distanceTo(_globeCenter)
-        useAtlasStore.getState().setGlobeView({
-          centerLat: lat,
-          centerLng: lng,
-          distance: dist,
-          autoRotating:
-            !selectedId &&
-            !reducedMotion &&
-            useExploreScaleStore.getState().mode === 'earth',
-        })
+        const ll = vec3ToLatLng(local)
+        centerLat = ll.lat
+        centerLng = ll.lng
+      } else {
+        /** Ray missed (rare); use the sub-Earth point toward the camera for readouts. */
+        _rayHit.copy(camera.position).sub(_globeCenter).normalize().multiplyScalar(GLOBE_RADIUS)
+        const ll = vec3ToLatLng(_rayHit)
+        centerLat = ll.lat
+        centerLng = ll.lng
       }
+      useAtlasStore.getState().setGlobeView({
+        centerLat,
+        centerLng,
+        distance: dist,
+        autoRotating:
+          !selectedId &&
+          !reducedMotion &&
+          useExploreScaleStore.getState().mode === 'earth',
+      })
     }
 
     const earth = earthMeshRef.current
@@ -164,37 +190,28 @@ export function GlobeScene() {
 
   return (
     <>
-      <color attach="background" args={['#070a10']} />
+      <GlobeBackground />
+      <GlobeVisualBlendDriver />
 
       <ExploreScaleBridge controlsRef={controlsRef} />
       <CosmicPlaceholder />
 
       <OrbitControls
         ref={controlsRef}
+        target={ORBIT_TARGET}
         enableDamping
         dampingFactor={0.048}
         minDistance={orbitLimits.min}
         maxDistance={orbitLimits.max}
         enablePan={false}
         autoRotate={!selectedId && !reducedMotion && exploreMode === 'earth'}
-        autoRotateSpeed={0.055}
+        autoRotateSpeed={GLOBE_AUTO_ROTATE_SPEED}
         rotateSpeed={0.42}
         makeDefault
       />
+      <GlobeOrbitVisualTuning controlsRef={controlsRef} />
 
-      {/* High-contrast key + cool fill; low ambient keeps the night side deep. */}
-      <ambientLight intensity={0.022} color="#0c1118" />
-      <directionalLight position={[5.2, 2.4, 3.6]} intensity={1.18} color="#e4e6ea" />
-      <directionalLight
-        position={[-3.8, -1.4, -2.8]}
-        intensity={0.09}
-        color="#5c6f82"
-      />
-      <directionalLight
-        position={[0.2, -4.2, 1.2]}
-        intensity={0.045}
-        color="#1c2838"
-      />
+      <GlobeLights />
 
       <group position={[0.1, -0.05, 0]} onPointerMissed={handlePointerMissed}>
         <Suspense fallback={<EarthProcedural ref={earthMeshRef} />}>

@@ -2,6 +2,7 @@
  * Maps Wikidata `wbgetentities` stubs into `TerrisEntity`.
  * Parsing is defensive — Wikidata’s claim graph is open-ended; extend P-id coverage over time.
  */
+import { formatYear } from '@/data/historical'
 import type { WikidataEntityStub } from '@/data/types/wikidata'
 import type {
   EarthEntityKind,
@@ -9,7 +10,8 @@ import type {
   TerrisCoords,
   TerrisEntity,
   TerrisFact,
-  TerrisTimelineEntry,
+  TerrisFactCategory,
+  TerrisTimelineEvent,
 } from '@/data/types/terrisEntity'
 
 /** P31 (instance of) → Earth kind heuristics (extend as coverage grows). */
@@ -116,6 +118,11 @@ function readYearFromClaims(claims: Record<string, unknown> | undefined, pid: st
   return y
 }
 
+function categoryForPid(pid: string): TerrisFactCategory {
+  if (pid === 'P17' || pid === 'P131' || pid === 'P276') return 'location'
+  return 'other'
+}
+
 function buildFacts(stub: WikidataEntityStub): TerrisFact[] {
   const claims = stub.claims as Record<string, unknown> | undefined
   const facts: TerrisFact[] = []
@@ -130,7 +137,8 @@ function buildFacts(stub: WikidataEntityStub): TerrisFact[] {
           id: `${stub.id}-${pid}-${i}`,
           label,
           value: qid,
-          source: pid,
+          category: categoryForPid(pid),
+          sourceName: 'Wikidata',
         })
       }
     })
@@ -141,27 +149,42 @@ function buildFacts(stub: WikidataEntityStub): TerrisFact[] {
   return facts.slice(0, 12)
 }
 
+/** Exported for enrichment — Wikidata-only facts without Wikipedia text. */
+export function wikidataFactsForStub(stub: WikidataEntityStub): TerrisFact[] {
+  return buildFacts(stub)
+}
+
+/** Exported for enrichment — inception / dissolution from claims. */
+export function wikidataTimelineForStub(stub: WikidataEntityStub): TerrisTimelineEvent[] {
+  const claims = stub.claims as Record<string, unknown> | undefined
+  return buildTimeline(stub, claims)
+}
+
 function buildTimeline(
   stub: WikidataEntityStub,
   claims: Record<string, unknown> | undefined,
-): TerrisTimelineEntry[] {
-  const tl: TerrisTimelineEntry[] = []
+): TerrisTimelineEvent[] {
+  const tl: TerrisTimelineEvent[] = []
   const inception = readYearFromClaims(claims, 'P571')
   if (inception !== null) {
     tl.push({
       id: `${stub.id}-inception`,
-      label: 'Inception / start',
-      startYear: inception,
-      endYear: null,
+      title: 'Inception / start',
+      dateLabel: formatYear(inception),
+      year: inception,
+      type: 'point',
+      summary: 'Recorded inception or organizational start from Wikidata claims.',
     })
   }
   const dissolved = readYearFromClaims(claims, 'P576')
   if (dissolved !== null) {
     tl.push({
       id: `${stub.id}-dissolved`,
-      label: 'Dissolved / end',
-      startYear: null,
-      endYear: dissolved,
+      title: 'Dissolved / end',
+      dateLabel: formatYear(dissolved),
+      year: dissolved,
+      type: 'point',
+      summary: 'Recorded dissolution or endpoint from Wikidata claims.',
     })
   }
   return tl
@@ -183,6 +206,17 @@ function buildRelatedFromClaims(claims: Record<string, unknown> | undefined): Re
     }
   })
   return out.slice(0, 20)
+}
+
+/** Commons filename from P18 (main image), when present. */
+export function readWikidataP18CommonsFilename(stub: WikidataEntityStub): string | null {
+  const claims = stub.claims as Record<string, unknown> | undefined
+  let name: string | null = null
+  forEachClaim(claims, 'P18', (st) => {
+    const v = firstDataValue(st)
+    if (typeof v === 'string' && !name) name = v
+  })
+  return name
 }
 
 /**

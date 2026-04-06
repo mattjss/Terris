@@ -1,6 +1,6 @@
 /**
- * Placeholder: short-form AI-generated video clips (B-roll, flythrough previews).
- * Distinct from documentary video; must carry `isInterpretive` and disclosure in UI.
+ * Legacy placeholder name — prefer `interpretiveVideoArchitecture` for educational clips.
+ * Short interpretive clips must use `isInterpretive: true` and `interpretiveVideoMeta`.
  */
 import type { TerrisMediaItem } from '@/data/types/terrisEntity'
 

@@ -28,15 +28,34 @@ function thumbnailToMedia(summary: WikipediaPageSummary, entityId: string): Terr
   ]
 }
 
+type MergeWikipediaOpts = {
+  /**
+   * When set (including empty), replaces default REST-thumbnail extraction:
+   * empty array falls back to `thumbnailToMedia` so a bare summary still yields a lead image if present.
+   */
+  leadMedia?: TerrisMediaItem[]
+}
+
+function resolveLeadMedia(
+  summary: WikipediaPageSummary,
+  entityId: string,
+  opts?: MergeWikipediaOpts,
+): TerrisMediaItem[] {
+  if (opts?.leadMedia === undefined) return thumbnailToMedia(summary, entityId)
+  if (opts.leadMedia.length > 0) return opts.leadMedia
+  return thumbnailToMedia(summary, entityId)
+}
+
 /**
  * Enrich a `TerrisEntity` (usually from `wikidataStubToTerrisEntity`) with lede text and lead image.
  */
 export function mergeWikipediaSummaryIntoTerrisEntity(
   entity: TerrisEntity,
   summary: WikipediaPageSummary,
+  opts?: MergeWikipediaOpts,
 ): TerrisEntity {
   const extract = summary.extract?.trim() ?? ''
-  const mergedMedia = [...entity.media, ...thumbnailToMedia(summary, entity.id)]
+  const mergedMedia = [...entity.media, ...resolveLeadMedia(summary, entity.id, opts)]
   return {
     ...entity,
     summary: entity.summary || extract.slice(0, 280),

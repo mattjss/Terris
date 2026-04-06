@@ -1,4 +1,5 @@
 import { useId, useMemo, useState } from 'react'
+import { INTERPRETIVE_RECONSTRUCTION_LABEL } from '@/data/reconstruction/reconstructionRules'
 import type { TerrisMediaItem } from '@/data/types/terrisEntity'
 import { partitionMedia } from '@/ui/mediaGalleryModel'
 
@@ -12,8 +13,8 @@ export type MediaGalleryProps = {
 function MediaBadge({ item }: { item: TerrisMediaItem }) {
   if (item.isInterpretive) {
     return (
-      <span className="terris-media-gallery__badge terris-media-gallery__badge--ai">
-        AI reconstruction
+      <span className="terris-media-gallery__badge terris-media-gallery__badge--interpretive">
+        {INTERPRETIVE_RECONSTRUCTION_LABEL}
       </span>
     )
   }
@@ -43,9 +44,20 @@ export function MediaGallery({ media, documentaryOnly = false, className }: Medi
 
   if (list.length === 0) {
     return (
-      <p className="terris-entity-panel__empty terris-media-gallery__empty">
-        No media attached yet. Wikimedia, IIIF, and Mapillary can hydrate this list.
-      </p>
+      <div
+        className="terris-media-gallery__empty terris-empty-state"
+        role="status"
+        aria-live="polite"
+      >
+        <span className="terris-empty-state__lead">No media here yet</span>
+        <span className="terris-empty-state__hint">
+          When sources connect, photographs, maps, and film stills show up in this gallery. Check
+          back after enrichment, or open another place that already has assets.
+        </span>
+        <span className="terris-empty-state__examples">
+          Tip: overview and reconstruction tabs may still tell the story without imagery.
+        </span>
+      </div>
     )
   }
 
@@ -54,7 +66,24 @@ export function MediaGallery({ media, documentaryOnly = false, className }: Medi
       {active ? (
         <figure className="terris-media-gallery__hero">
           <div className="terris-media-gallery__hero-frame">
-            {active.type === 'video' ? (
+            {active.type === 'video' && !active.url?.trim() ? (
+              <div className="terris-media-gallery__video-pending">
+                {active.thumbnailUrl ? (
+                  <img
+                    className="terris-media-gallery__hero-media"
+                    src={active.thumbnailUrl}
+                    alt=""
+                    loading="lazy"
+                  />
+                ) : null}
+                <div className="terris-media-gallery__video-pending-label">
+                  <span className="terris-media-gallery__video-pending-title">Clip not available yet</span>
+                  <span className="terris-media-gallery__video-pending-sub">
+                    {INTERPRETIVE_RECONSTRUCTION_LABEL} · see Reconstruction tab for details
+                  </span>
+                </div>
+              </div>
+            ) : active.type === 'video' ? (
               <video
                 className="terris-media-gallery__hero-media"
                 controls

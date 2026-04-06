@@ -1,6 +1,6 @@
 /**
  * Types for the English Wikipedia REST API (`/api/rest_v1/`) and, optionally,
- * the MediaWiki Action API (`w/api.php`). See `wikipediaClient.ts` for URLs.
+ * the MediaWiki Action API (`w/api.php`). See `wikipediaClient.ts` and `wikipediaRestClient.ts`.
  */
 
 /** https://en.wikipedia.org/api/rest_v1/#/Page%20content/get_page_summary__title_ */
@@ -37,5 +37,24 @@ export type WikipediaSearchResult = {
 export type WikipediaSearchResponse = {
   query?: {
     search?: WikipediaSearchResult[]
+  }
+}
+
+/** `action=query&prop=pageimages` — lead / representative image for a page. */
+export type WikipediaPageImagesQueryResponse = {
+  batchcomplete?: string
+  query?: {
+    pages?: Record<
+      string,
+      {
+        pageid?: number
+        ns?: number
+        title?: string
+        missing?: string
+        thumbnail?: { source: string; width: number; height: number }
+        /** Filename without namespace, when present with thumbnail. */
+        pageimage?: string
+      }
+    >
   }
 }

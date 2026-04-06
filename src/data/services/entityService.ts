@@ -3,10 +3,16 @@
  */
 import {
   mergeWikipediaSummaryIntoTerrisEntity,
+  readWikidataP18CommonsFilename,
   wikidataStubToTerrisEntity,
 } from '@/data/adapters'
 import { getWikidataEntities } from '@/data/clients/wikidataRestClient'
-import { getWikipediaSummary } from '@/data/clients/wikipediaRestClient'
+import { fetchCommonsFileAsTerrisMedia } from '@/data/clients/wikimediaCommonsClient'
+import {
+  fetchWikipediaSummaryAndLeadMedia,
+  getWikipediaSummary,
+} from '@/data/clients/wikipediaClient'
+import { integrationFlags } from '@/data/clients/integrationConfig'
 import type { TerrisEntity } from '@/data/types/terrisEntity'
 import { TERRIS_ENTITY_BOSTON } from '@/data/mock/bostonEntityHub'
 import { UNIFIED_MOCK_ENTITY_CATALOG } from '@/data/mock/unifiedCatalog'
@@ -48,9 +54,24 @@ export async function fetchTerrisEntityFromWikidata(qid: string): Promise<Terris
   let entity = wikidataStubToTerrisEntity(stub)
   const title = stub.sitelinks?.enwiki?.title
   if (title) {
-    const summary = await getWikipediaSummary(title)
-    entity = mergeWikipediaSummaryIntoTerrisEntity(entity, summary)
+    if (integrationFlags.wikipediaLive) {
+      const { summary, media } = await fetchWikipediaSummaryAndLeadMedia(title, entity.id)
+      entity = mergeWikipediaSummaryIntoTerrisEntity(entity, summary, { leadMedia: media })
+    } else {
+      const summary = await getWikipediaSummary(title)
+      entity = mergeWikipediaSummaryIntoTerrisEntity(entity, summary)
+    }
   }
+
+  const commonsFile = readWikidataP18CommonsFilename(stub)
+  if (commonsFile && integrationFlags.wikimediaCommonsLive) {
+    const commonsItem = await fetchCommonsFileAsTerrisMedia(commonsFile, entity.id)
+    if (commonsItem) {
+      const withoutDup = entity.media.filter((m) => m.url !== commonsItem.url)
+      entity = { ...entity, media: [...withoutDup, commonsItem] }
+    }
+  }
+
   return entity
 }
 

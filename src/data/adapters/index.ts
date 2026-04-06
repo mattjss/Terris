@@ -1,4 +1,7 @@
-export { wikidataStubToTerrisEntity } from './wikidataToTerrisEntity'
+export {
+  wikidataStubToTerrisEntity,
+  readWikidataP18CommonsFilename,
+} from './wikidataToTerrisEntity'
 export {
   mergeWikipediaSummaryIntoTerrisEntity,
   wikipediaSummaryToMinimalTerrisEntity,

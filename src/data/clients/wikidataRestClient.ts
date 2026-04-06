@@ -7,6 +7,7 @@
  */
 import type {
   WikidataEntityId,
+  WikidataEntityStub,
   WikidataGetEntitiesResponse,
   WikidataSearchResponse,
 } from '@/data/types/wikidata'
@@ -29,15 +30,28 @@ const MOCK_SEARCH: WikidataSearchResponse = {
   ],
 }
 
-const MOCK_ENTITY: WikidataGetEntitiesResponse = {
-  entities: {
-    Q220: {
-      id: 'Q220',
-      type: 'item',
-      labels: { en: { language: 'en', value: 'Rome' } },
-      descriptions: { en: { language: 'en', value: 'capital city of Italy' } },
-    },
-  },
+const MOCK_ENTITY_TEMPLATE: WikidataEntityStub = {
+  id: 'Q220',
+  type: 'item',
+  labels: { en: { language: 'en', value: 'Rome' } },
+  descriptions: { en: { language: 'en', value: 'capital city of Italy' } },
+}
+
+function mockGetEntities(ids: WikidataEntityId[]): WikidataGetEntitiesResponse {
+  const entities: Record<string, WikidataEntityStub> = {}
+  for (const id of ids) {
+    entities[id] = {
+      ...MOCK_ENTITY_TEMPLATE,
+      id,
+      labels: {
+        en: {
+          language: 'en',
+          value: id === 'Q220' ? 'Rome' : `Wikidata ${id} (mock)`,
+        },
+      },
+    }
+  }
+  return { entities }
 }
 
 async function searchEntitiesLive(query: string): Promise<WikidataSearchResponse> {
@@ -88,9 +102,19 @@ export async function getWikidataEntities(
   ids: WikidataEntityId[],
 ): Promise<WikidataGetEntitiesResponse> {
   if (!integrationFlags.wikidataLive) {
-    return MOCK_ENTITY
+    return mockGetEntities(ids)
   }
   return getEntitiesLive(ids)
+}
+
+/**
+ * Single-item fetch for enrichment — same payload as `wbgetentities` with labels, descriptions, claims, sitelinks.
+ */
+export async function getWikidataEntityForEnrichment(
+  id: WikidataEntityId,
+): Promise<WikidataEntityStub | null> {
+  const res = await getWikidataEntities([id])
+  return res.entities?.[id] ?? null
 }
 
 /**

@@ -1,24 +1,29 @@
-import { useEffect, useId, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { AlertTriangle, X } from 'lucide-react'
 import { Button } from '@base-ui/react/button'
 import { Tabs } from '@base-ui/react/tabs'
 import { getMockEntityById } from '@/data/services/entityService'
 import type { RelatedEntityRef, TerrisEntity, TerrisMediaItem } from '@/data/types/terrisEntity'
-import type { ContextMode } from '@/state/educationalContextTypes'
-import { partitionMedia, pickHeroMedia } from '@/ui/mediaGalleryModel'
+import { pickHeroMedia } from '@/ui/mediaGalleryModel'
+import { InterpretiveReconstructionPanel } from '@/ui/InterpretiveReconstructionPanel'
 import { MediaGallery } from '@/ui/MediaGallery'
 import {
   formatCoords,
   formatEntityKindLabel,
   formatEntityYearRange,
-  formatTimelineWhen,
-  groupRelatedByKind,
+  formatTimelineDateLabel,
+  groupFactsByCategory,
+  groupNearbyByAnchor,
+  groupRelatedByDiscoveryGroup,
   resolveNearbyRefs,
   sortTimelineChronological,
 } from '@/ui/placeSheetHelpers'
 import type { PlaceSheetProps, PlaceSheetTabId } from '@/ui/placeSheetTypes'
 import { PLACE_SHEET_TABS } from '@/ui/placeSheetTypes'
 import { useEducationalContext } from '@/hooks/useEducationalContext'
+import { useTerrisStore } from '@/state/useTerrisStore'
+import { EntityRecommendations } from '@/ui/EntityRecommendations'
+import { EntityFieldNotes } from '@/ui/EntityFieldNotes'
 
 export type { PlaceSheetProps, PlaceSheetTabId } from '@/ui/placeSheetTypes'
 
@@ -161,19 +166,22 @@ export function PlaceSheet({
   onFocusGlobe,
   onJumpToEra,
   onOpenRelatedEntity,
+  enrichmentLoading,
+  enrichmentError,
   className,
 }: PlaceSheetProps) {
   const uid = useId()
   const titleId = `${uid}-title`
   const panelId = `${uid}-panel`
   const [tab, setTab] = useState<PlaceSheetTabId>('overview')
+  const [contentRefresh, setContentRefresh] = useState(false)
+  const lastEntityIdRef = useRef<string | null>(null)
 
   const {
-    contextMode,
+    emptyPlaceTeaser,
     visiblePlaceSheetTabs,
     metadataCompact,
     overviewShowsFullStory,
-    profile,
   } = useEducationalContext()
 
   const tabDefs = useMemo(
@@ -181,7 +189,23 @@ export function PlaceSheet({
     [visiblePlaceSheetTabs],
   )
 
+  const guidedSheetTabHint = useTerrisStore((s) => s.guidedSheetTabHint)
+  const setGuidedSheetTabHint = useTerrisStore((s) => s.setGuidedSheetTabHint)
+
   const empty = entity === null
+
+  useEffect(() => {
+    if (!entity) {
+      lastEntityIdRef.current = null
+      return
+    }
+    const prev = lastEntityIdRef.current
+    lastEntityIdRef.current = entity.id
+    if (prev === null || prev === entity.id) return
+    setContentRefresh(true)
+    const t = window.setTimeout(() => setContentRefresh(false), 420)
+    return () => window.clearTimeout(t)
+  }, [entity?.id])
 
   const tabKey = visiblePlaceSheetTabs.join('|')
   useEffect(() => {
@@ -190,20 +214,30 @@ export function PlaceSheet({
     }
   }, [entity?.id, tab, tabKey, visiblePlaceSheetTabs])
 
+  useEffect(() => {
+    if (!entity || !guidedSheetTabHint) return
+    if (!visiblePlaceSheetTabs.includes(guidedSheetTabHint)) {
+      setGuidedSheetTabHint(null)
+      return
+    }
+    setTab(guidedSheetTabHint)
+    setGuidedSheetTabHint(null)
+  }, [entity?.id, guidedSheetTabHint, visiblePlaceSheetTabs, setGuidedSheetTabHint])
+
   const timelineSorted = useMemo(
     () => (entity ? sortTimelineChronological(entity.timeline) : []),
     [entity],
   )
 
-  const relatedGroups = useMemo(
-    () => (entity ? groupRelatedByKind(entity.relatedEntities) : []),
+  const relatedDiscoveryGroups = useMemo(
+    () => (entity ? groupRelatedByDiscoveryGroup(entity.relatedEntities) : []),
     [entity],
   )
 
-  const nearbyRefs = useMemo(
-    () => (entity ? resolveNearbyRefs(entity) : []),
-    [entity],
-  )
+  const nearbyGroups = useMemo(() => {
+    if (!entity) return []
+    return groupNearbyByAnchor(resolveNearbyRefs(entity))
+  }, [entity])
 
   const heroMedia = useMemo(
     () => (entity ? pickHeroMedia(entity.media) : null),
@@ -215,7 +249,6 @@ export function PlaceSheet({
       className={[
         'terris-place-sheet',
         empty ? 'terris-place-sheet--empty' : '',
-        `terris-place-sheet--ctx-${contextMode}`,
         className ?? '',
       ]
         .filter(Boolean)
@@ -223,8 +256,12 @@ export function PlaceSheet({
       role="complementary"
       aria-labelledby={empty ? undefined : titleId}
       aria-label={empty ? 'Entity details' : undefined}
+      aria-busy={enrichmentLoading ? 'true' : undefined}
     >
-      <div className="terris-place-sheet__inner">
+      <div
+        className="terris-place-sheet__inner"
+        data-content-refresh={contentRefresh ? 'true' : undefined}
+      >
         {onClose ? (
           <Button
             type="button"
@@ -259,7 +296,7 @@ export function PlaceSheet({
               </svg>
             </div>
             <h2 className="terris-place-sheet__empty-title">No entity selected</h2>
-            <p className="terris-place-sheet__empty-lede">{profile.emptyPlaceTeaser}</p>
+            <p className="terris-place-sheet__empty-lede">{emptyPlaceTeaser}</p>
             <p className="terris-place-sheet__empty-hint">
               Tap a marker or search when you are ready.
             </p>
@@ -269,22 +306,55 @@ export function PlaceSheet({
             <PlaceSheetHero media={heroMedia} headline={entity.name} />
 
             <header className="terris-place-sheet__header terris-place-sheet__header--editorial">
-              <h2 id={titleId} className="terris-place-sheet__title">
-                {entity.name}
-              </h2>
+              <div className="terris-place-sheet__title-row">
+                <h2 id={titleId} className="terris-place-sheet__title">
+                  {entity.name}
+                </h2>
+                {entity.sources?.enrichment?.status === 'mixed' ||
+                entity.sources?.enrichment?.status === 'live' ? (
+                  <span className="terris-place-sheet__enrich-badge">Live enriched</span>
+                ) : null}
+              </div>
               <EntityMetadataBlock entity={entity} compact={metadataCompact} />
               <p className="terris-place-sheet__deck">{entity.summary}</p>
+              {enrichmentLoading ? (
+                <div className="terris-place-sheet__enrich-panel" role="status" aria-live="polite">
+                  <p className="terris-place-sheet__enrich-status">
+                    <span className="terris-place-sheet__enrich-calm" aria-hidden />
+                    Gathering live context — this can take a moment.
+                  </p>
+                  <div className="terris-place-sheet__enrich-skeleton" aria-hidden>
+                    <div className="terris-skeleton-line" />
+                    <div className="terris-skeleton-line terris-skeleton-line--mid" />
+                    <div className="terris-skeleton-line terris-skeleton-line--short" />
+                  </div>
+                </div>
+              ) : null}
+              {enrichmentError ? (
+                <p
+                  className="terris-place-sheet__enrich-warn"
+                  role="status"
+                  aria-live="polite"
+                >
+                  <AlertTriangle className="terris-place-sheet__enrich-warn-icon" aria-hidden />
+                  {enrichmentError}
+                </p>
+              ) : null}
+              {entity.sources?.enrichment?.warnings?.length ? (
+                <p className="terris-place-sheet__enrich-hint" role="status">
+                  Some live sources were skipped: {entity.sources.enrichment.warnings.join(' · ')}
+                </p>
+              ) : null}
             </header>
+
+            <EntityFieldNotes entity={entity} />
 
             <Tabs.Root
               value={tab}
               onValueChange={(v) => setTab(v as PlaceSheetTabId)}
               className="flex min-h-0 flex-1 flex-col gap-0"
             >
-              <Tabs.List
-                aria-label="Entity sections"
-                className="terris-place-sheet__tabs w-full shrink-0 justify-start border border-white/6 bg-black/[0.28] p-1"
-              >
+              <Tabs.List aria-label="Entity sections" className="terris-place-sheet__tabs">
                 {tabDefs.map((t) => (
                   <Tabs.Tab key={t.id} value={t.id} id={`${uid}-tab-${t.id}`}>
                     {t.label}
@@ -304,12 +374,11 @@ export function PlaceSheet({
                       <PlaceSheetPanelBody
                         tab={t.id}
                         entity={entity}
-                        contextMode={contextMode}
                         overviewShowsFullStory={overviewShowsFullStory}
                         onOpenRelatedEntity={onOpenRelatedEntity}
                         timelineSorted={timelineSorted}
-                        relatedGroups={relatedGroups}
-                        nearbyRefs={nearbyRefs}
+                        relatedDiscoveryGroups={relatedDiscoveryGroups}
+                        nearbyGroups={nearbyGroups}
                       />
                     </div>
                   </div>
@@ -345,77 +414,127 @@ export function PlaceSheet({
 function PlaceSheetPanelBody({
   tab,
   entity,
-  contextMode,
   overviewShowsFullStory,
   onOpenRelatedEntity,
   timelineSorted,
-  relatedGroups,
-  nearbyRefs,
+  relatedDiscoveryGroups,
+  nearbyGroups,
 }: {
   tab: PlaceSheetTabId
   entity: TerrisEntity
-  contextMode: ContextMode
   overviewShowsFullStory: boolean
   onOpenRelatedEntity?: (entityId: string) => void
   timelineSorted: ReturnType<typeof sortTimelineChronological>
-  relatedGroups: ReturnType<typeof groupRelatedByKind>
-  nearbyRefs: RelatedEntityRef[]
+  relatedDiscoveryGroups: ReturnType<typeof groupRelatedByDiscoveryGroup>
+  nearbyGroups: ReturnType<typeof groupNearbyByAnchor>
 }) {
   switch (tab) {
     case 'overview':
       if (!overviewShowsFullStory) {
         return (
-          <div className="terris-entity-panel terris-entity-panel--overview">
-            <h3 className="terris-entity-panel__section-label">At a glance</h3>
-            <p className="terris-entity-panel__body">{entity.summary}</p>
+          <div className="terris-entity-overview">
+            <div className="terris-dossier terris-dossier--overview">
+              <p className="terris-dossier__kicker">Summary</p>
+              <p className="terris-dossier__lede">{entity.summary}</p>
+            </div>
+            <EntityRecommendations entity={entity} onOpenEntity={onOpenRelatedEntity} />
           </div>
         )
       }
       return (
-        <div className="terris-entity-panel terris-entity-panel--overview">
-          <h3 className="terris-entity-panel__section-label">Full story</h3>
-          <p className="terris-entity-panel__body">{entity.fullDescription}</p>
+        <div className="terris-entity-overview">
+          <div className="terris-dossier terris-dossier--overview">
+            <p className="terris-dossier__kicker">Summary</p>
+            <p className="terris-dossier__lede">{entity.summary}</p>
+            <div className="terris-dossier__divider" aria-hidden />
+            <p className="terris-dossier__kicker">Full narrative</p>
+            <div className="terris-dossier__prose">
+              {entity.fullDescription
+                .split(/\n\n+/)
+                .map((p) => p.trim())
+                .filter(Boolean)
+                .map((para, i) => (
+                  <p key={i} className="terris-dossier__paragraph">
+                    {para}
+                  </p>
+                ))}
+            </div>
+          </div>
+          <EntityRecommendations entity={entity} onOpenEntity={onOpenRelatedEntity} />
         </div>
       )
     case 'timeline':
       return (
-        <ul className="terris-entity-timeline">
-          {timelineSorted.length === 0 ? (
-            <li className="terris-entity-panel__empty">No dated events yet.</li>
-          ) : (
-            timelineSorted.map((e) => (
-              <li key={e.id} className="terris-entity-timeline__item">
-                <div className="terris-entity-timeline__rail" aria-hidden />
-                <div className="terris-entity-timeline__content">
-                  <p className="terris-entity-timeline__when">{formatTimelineWhen(e)}</p>
-                  <p className="terris-entity-timeline__label">{e.label}</p>
-                  {e.summary ? (
-                    <p className="terris-entity-timeline__summary">{e.summary}</p>
-                  ) : null}
-                </div>
-              </li>
-            ))
-          )}
-        </ul>
+        <div className="terris-dossier terris-dossier--timeline">
+          <p className="terris-dossier__tab-lede">
+            Chronology is editorial: each row is a teaching moment—compare dates to the map and media tabs.
+          </p>
+          <ul className="terris-dossier-timeline">
+            {timelineSorted.length === 0 ? (
+              <li className="terris-entity-panel__empty">No dated events yet.</li>
+            ) : (
+              timelineSorted.map((e) => (
+                <li key={e.id} className="terris-dossier-timeline__item">
+                  <div className="terris-dossier-timeline__marker" aria-hidden />
+                  <div className="terris-dossier-timeline__body">
+                    <div className="terris-dossier-timeline__meta">
+                      <span className="terris-dossier-timeline__date">{formatTimelineDateLabel(e)}</span>
+                      <span className={`terris-dossier-timeline__type terris-dossier-timeline__type--${e.type}`}>
+                        {e.type === 'point' ? 'Moment' : e.type === 'range' ? 'Span' : 'Era'}
+                      </span>
+                    </div>
+                    <h4 className="terris-dossier-timeline__title">{e.title}</h4>
+                    {e.summary ? <p className="terris-dossier-timeline__summary">{e.summary}</p> : null}
+                    {e.relatedEntityIds?.length ? (
+                      <div className="terris-dossier-timeline__links">
+                        {e.relatedEntityIds.map((rid) => {
+                          const rel = entity.relatedEntities.find((r) => r.id === rid)
+                          return (
+                            <button
+                              key={rid}
+                              type="button"
+                              className="terris-dossier-timeline__link"
+                              disabled={!onOpenRelatedEntity}
+                              onClick={() => onOpenRelatedEntity?.(rid)}
+                            >
+                              {rel?.name ?? rid}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    ) : null}
+                  </div>
+                </li>
+              ))
+            )}
+          </ul>
+        </div>
       )
     case 'facts': {
-      const facts =
-        contextMode === 'family' ? entity.facts.slice(0, 6) : entity.facts
+      const factSections = groupFactsByCategory(entity.facts)
       return (
-        <div
-          className={
-            'terris-entity-facts terris-entity-facts--grid' +
-            (contextMode === 'family' ? ' terris-entity-facts--family' : '')
-          }
-        >
-          {facts.length === 0 ? (
+        <div className="terris-dossier terris-dossier--facts">
+          <p className="terris-dossier__tab-lede">
+            Facts are grouped for scanning—like a museum label system, not a raw database dump.
+          </p>
+          {factSections.length === 0 ? (
             <p className="terris-entity-panel__empty">No structured facts yet.</p>
           ) : (
-            facts.map((f) => (
-              <dl key={f.id} className="terris-entity-facts__card">
-                <dt className="terris-entity-facts__label">{f.label}</dt>
-                <dd className="terris-entity-facts__value">{f.value}</dd>
-              </dl>
+            factSections.map((section) => (
+              <section key={section.category} className="terris-dossier-facts__section">
+                <h3 className="terris-dossier-facts__heading">{section.label}</h3>
+                <ul className="terris-dossier-facts__list">
+                  {section.items.map((f) => (
+                    <li key={f.id} className="terris-dossier-facts__row">
+                      <span className="terris-dossier-facts__label">{f.label}</span>
+                      <span className="terris-dossier-facts__value">{f.value}</span>
+                      {f.sourceName ? (
+                        <span className="terris-dossier-facts__src">{f.sourceName}</span>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              </section>
             ))
           )}
         </div>
@@ -439,16 +558,19 @@ function PlaceSheetPanelBody({
     }
     case 'related':
       return (
-        <div className="terris-entity-related">
-          {relatedGroups.length === 0 ? (
+        <div className="terris-dossier terris-dossier--related">
+          <p className="terris-dossier__tab-lede">
+            Cross-links for discovery—grouped so you can move from place to person to event without losing the thread.
+          </p>
+          {relatedDiscoveryGroups.length === 0 ? (
             <p className="terris-entity-panel__empty">No related entities linked yet.</p>
           ) : (
-            relatedGroups.map((g) => (
-              <section key={g.kind} className="terris-entity-related__group">
-                <h3 className="terris-entity-related__heading">{g.label}</h3>
-                <ul className="terris-entity-related__list">
+            relatedDiscoveryGroups.map((g) => (
+              <section key={g.group} className="terris-dossier-related__group">
+                <h3 className="terris-dossier-related__heading">{g.label}</h3>
+                <ul className="terris-dossier-related__list">
                   {g.items.map((item) => (
-                    <li key={`${g.kind}-${item.id}`}>
+                    <li key={`${g.group}-${item.id}`}>
                       <RelatedEntityRow
                         item={item}
                         onOpen={
@@ -467,69 +589,46 @@ function PlaceSheetPanelBody({
       )
     case 'nearby':
       return (
-        <div className="terris-entity-nearby">
-          <p className="terris-entity-nearby__lede">
-            Curated neighbors and walkable anchors—spatial queries will refine distance and bearing.
+        <div className="terris-dossier terris-dossier--nearby">
+          <p className="terris-dossier__tab-lede">
+            Nearby anchors for this place—curated for orientation; future builds will add distance and bearing.
           </p>
-          {nearbyRefs.length === 0 ? (
+          {nearbyGroups.length === 0 ? (
             <p className="terris-entity-panel__empty">No nearby anchors listed.</p>
           ) : (
-            <ul className="terris-entity-nearby__list">
-              {nearbyRefs.map((item) => {
-                const detail = getMockEntityById(item.id)
-                return (
-                  <li key={item.id}>
-                    <button
-                      type="button"
-                      className="terris-entity-nearby__card"
-                      disabled={!onOpenRelatedEntity}
-                      onClick={() => onOpenRelatedEntity?.(item.id)}
-                    >
-                      <span className="terris-entity-nearby__kind">
-                        {formatEntityKindLabel(item.kind)}
-                      </span>
-                      <span className="terris-entity-nearby__name">{item.name}</span>
-                      {item.role ? (
-                        <span className="terris-entity-nearby__role">{item.role}</span>
-                      ) : null}
-                      {detail?.summary ? (
-                        <span className="terris-entity-nearby__hint">{detail.summary}</span>
-                      ) : null}
-                    </button>
-                  </li>
-                )
-              })}
-            </ul>
+            nearbyGroups.map((ng) => (
+              <section key={ng.anchor} className="terris-dossier-nearby__group">
+                <h3 className="terris-dossier-nearby__heading">{ng.label}</h3>
+                <ul className="terris-dossier-nearby__list">
+                  {ng.items.map((item) => {
+                    const detail = getMockEntityById(item.id)
+                    return (
+                      <li key={`${ng.anchor}-${item.id}`}>
+                        <button
+                          type="button"
+                          className="terris-dossier-nearby__card"
+                          disabled={!onOpenRelatedEntity}
+                          onClick={() => onOpenRelatedEntity?.(item.id)}
+                        >
+                          <span className="terris-dossier-nearby__name">{item.name}</span>
+                          {item.role ? (
+                            <span className="terris-dossier-nearby__role">{item.role}</span>
+                          ) : null}
+                          {detail?.summary ? (
+                            <span className="terris-dossier-nearby__hint">{detail.summary}</span>
+                          ) : null}
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </section>
+            ))
           )}
         </div>
       )
-    case 'reconstruction': {
-      const { interpretive } = partitionMedia(entity.media)
-      const reconKey = interpretive.map((m) => m.id).join('|')
-      return (
-        <div className="terris-entity-recon-tab">
-          <div className="terris-entity-recon-tab__banner">
-            <AlertTriangle className="terris-entity-recon-tab__banner-icon size-4 shrink-0" aria-hidden />
-            <div>
-              <p className="terris-entity-recon-tab__banner-title">Interpretive layer</p>
-              <p className="terris-entity-recon-tab__banner-body">
-                Content here is modeled or AI-assisted for exploration—not primary historical evidence. Compare with
-                archival media and cited sources.
-              </p>
-            </div>
-          </div>
-          <p className="terris-entity-recon-tab__lede">
-            Each asset below is flagged as interpretive; production builds will attach uncertainty, provenance, and
-            review status.
-          </p>
-          {interpretive.length === 0 ? (
-            <p className="terris-entity-panel__empty">No interpretive reconstructions for this entity yet.</p>
-          ) : (
-            <MediaGallery key={`${entity.id}-recon-${reconKey}`} media={interpretive} />
-          )}
-        </div>
-      )
-    }
+    case 'reconstruction':
+      return <InterpretiveReconstructionPanel entity={entity} />
     default:
       return null
   }
@@ -545,16 +644,16 @@ function RelatedEntityRow({
   const interactive = Boolean(onOpen)
   if (interactive) {
     return (
-      <button type="button" className="terris-entity-related__row" onClick={onOpen}>
-        <span className="terris-entity-related__name">{item.name}</span>
-        {item.role ? <span className="terris-entity-related__role">{item.role}</span> : null}
+      <button type="button" className="terris-dossier-related__row" onClick={onOpen}>
+        <span className="terris-dossier-related__name">{item.name}</span>
+        {item.role ? <span className="terris-dossier-related__role">{item.role}</span> : null}
       </button>
     )
   }
   return (
-    <div className="terris-entity-related__row terris-entity-related__row--static">
-      <span className="terris-entity-related__name">{item.name}</span>
-      {item.role ? <span className="terris-entity-related__role">{item.role}</span> : null}
+    <div className="terris-dossier-related__row terris-dossier-related__row--static">
+      <span className="terris-dossier-related__name">{item.name}</span>
+      {item.role ? <span className="terris-dossier-related__role">{item.role}</span> : null}
     </div>
   )
 }

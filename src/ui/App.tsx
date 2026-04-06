@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { GlobeCanvas } from '@/components/globe/GlobeCanvas'
 import { RouterSync } from '@/components/UrlSync'
@@ -16,14 +16,20 @@ import { ExploreModeContextBar } from '@/ui/ExploreModeContextBar'
 import { PlanetaryObjectSheetPlaceholder } from '@/ui/PlanetaryObjectSheetPlaceholder'
 import { useExploreUiPhase } from '@/ui/useExploreUiPhase'
 import { findTerrisPoiById } from '@/data/terrisPoi'
-import { getMockEntityById } from '@/data/services/entityService'
+import { getMockEntityById, hydrateTerrisEntity } from '@/data/services/entityService'
 import type { TerrisEntity } from '@/data/types/terrisEntity'
 import { resolveTerrisEntityForPoi } from '@/ui/terrisPoiToTerrisEntity'
-import { CONTEXT_MODE_PROFILES } from '@/config/contextModeConfig'
-import { ContextModePicker } from '@/ui/ContextModePicker'
-import { TeacherGuideStrip } from '@/ui/TeacherGuideStrip'
-import { FamilyJourneyHint } from '@/ui/FamilyJourneyHint'
-import { KioskIdleAttract } from '@/ui/KioskIdleAttract'
+import { TERRIS_SEARCH_BAR_HINT_EARTH } from '@/config/terrisPresentationConfig'
+import { ContentDepthPicker } from '@/ui/ContentDepthPicker'
+import { GuidedPathwayDock } from '@/ui/GuidedPathwayDock'
+import { useEnrichedEntity } from '@/hooks/useEnrichedEntity'
+import { createLearningJournalPersistence } from '@/persistence/createLearningJournalPersistence'
+import { useLearningJournalStore } from '@/state/useLearningJournalStore'
+import { hydrateGlobeVisualBlendRef } from '@/state/globeVisualModeStore'
+import { useGlobeVisualModeStore } from '@/state/globeVisualModeStore'
+import { LearningJournalSync } from '@/ui/LearningJournalSync'
+import { ContinueLearningBanner } from '@/ui/ContinueLearningBanner'
+import { GlobeModeSwitcher } from '@/ui/GlobeModeSwitcher'
 import './styles.css'
 
 function jumpYearForEntity(entity: TerrisEntity): number {
@@ -36,6 +42,18 @@ function jumpYearForEntity(entity: TerrisEntity): number {
 function AtlasShell() {
   useYearKeyboard()
 
+  const journalHydratedRef = useRef(false)
+  useEffect(() => {
+    if (journalHydratedRef.current) return
+    journalHydratedRef.current = true
+    const { adapter, persistenceAvailable } = createLearningJournalPersistence()
+    useLearningJournalStore.getState().hydrate(adapter, persistenceAvailable)
+  }, [])
+
+  useEffect(() => {
+    hydrateGlobeVisualBlendRef()
+  }, [])
+
   const explorePhase = useExploreUiPhase()
   const exploreMode = useExploreScaleStore((s) => s.mode)
 
@@ -43,28 +61,49 @@ function AtlasShell() {
   const setYear = useTerrisStore((s) => s.setYear)
   const setSearchOpen = useTerrisStore((s) => s.setSearchOpen)
   const selectedEntity = useTerrisStore((s) => s.selectedEntity)
+  const {
+    entity: placeSheetEntity,
+    enrichmentLoading,
+    enrichmentError,
+  } = useEnrichedEntity(selectedEntity)
   const enterPlaceDetail = useTerrisStore((s) => s.enterPlaceDetail)
   const uiMode = useTerrisStore((s) => s.uiMode)
   const exitPlaceDetail = useTerrisStore((s) => s.exitPlaceDetail)
   const requestGlobeFocus = useTerrisStore((s) => s.requestGlobeFocus)
   const setSearchMode = useTerrisStore((s) => s.setSearchMode)
-  const contextMode = useTerrisStore((s) => s.contextMode)
-  const lockedNavigation = useTerrisStore((s) => s.lockedNavigation)
   const bumpUserInteraction = useTerrisStore((s) => s.bumpUserInteraction)
+  const globeVisualMode = useGlobeVisualModeStore((s) => s.mode)
 
   const setAtlasYear = useAtlasStore((s) => s.setYear)
 
+  const setExploreMode = useExploreScaleStore((s) => s.setMode)
+
   const onOpenRelatedEntity = useCallback(
-    (entityId: string) => {
+    async (entityId: string) => {
       const fromCatalog = getMockEntityById(entityId)
       if (fromCatalog) {
+        setExploreMode(fromCatalog.mode)
         enterPlaceDetail(fromCatalog)
         return
       }
+      if (entityId.startsWith('Q')) {
+        try {
+          const live = await hydrateTerrisEntity(entityId)
+          setExploreMode(live.mode)
+          enterPlaceDetail(live)
+          return
+        } catch {
+          /* Wikidata/Wikipedia unavailable — fall through */
+        }
+      }
       const poi = findTerrisPoiById(entityId)
-      if (poi) enterPlaceDetail(resolveTerrisEntityForPoi(poi))
+      if (poi) {
+        const resolved = resolveTerrisEntityForPoi(poi)
+        setExploreMode(resolved.mode)
+        enterPlaceDetail(resolved)
+      }
     },
-    [enterPlaceDetail],
+    [enterPlaceDetail, setExploreMode],
   )
 
   useEffect(() => {
@@ -104,14 +143,16 @@ function AtlasShell() {
   }, [exitPlaceDetail])
 
   const onFocusGlobe = useCallback(() => {
-    if (!selectedEntity?.coords) return
-    requestGlobeFocus(selectedEntity.coords.lat, selectedEntity.coords.lon)
-  }, [selectedEntity, requestGlobeFocus])
+    const e = placeSheetEntity ?? selectedEntity
+    if (!e?.coords) return
+    requestGlobeFocus(e.coords.lat, e.coords.lon)
+  }, [placeSheetEntity, selectedEntity, requestGlobeFocus])
 
   const onJumpToEra = useCallback(() => {
-    if (!selectedEntity) return
-    setYear(jumpYearForEntity(selectedEntity))
-  }, [selectedEntity, setYear])
+    const e = placeSheetEntity ?? selectedEntity
+    if (!e) return
+    setYear(jumpYearForEntity(e))
+  }, [placeSheetEntity, selectedEntity, setYear])
 
   useEffect(() => {
     if (uiMode !== 'globe') return
@@ -131,8 +172,7 @@ function AtlasShell() {
   const appShellClass = [
     'terris-app',
     uiMode === 'place_detail' ? 'terris-app--place-detail' : '',
-    `terris-app--context-${contextMode}`,
-    lockedNavigation ? 'terris-app--locked-nav' : '',
+    `terris-app--globe-visual-${globeVisualMode}`,
   ]
     .filter(Boolean)
     .join(' ')
@@ -143,6 +183,7 @@ function AtlasShell() {
       onPointerDownCapture={() => bumpUserInteraction()}
     >
       <RouterSync />
+      <LearningJournalSync />
 
       <div className="terris-canvas-layer" aria-hidden>
         <GlobeCanvas />
@@ -155,40 +196,36 @@ function AtlasShell() {
               <span className="terris-brand-mark__name">Terris</span>
               <span className="terris-brand-mark__tag">Atlas</span>
             </div>
-            <ContextModePicker />
+            <ContentDepthPicker />
+            <ContinueLearningBanner />
+            <GuidedPathwayDock />
           </div>
-
-          <TeacherGuideStrip />
 
           <div className="terris-explore-mode-slot">
             <ExploreModeContextBar />
+            <GlobeModeSwitcher />
           </div>
 
           <div className="terris-search-float">
             <div className="terris-search-column">
               <SearchBar
                 onOpen={() => setSearchOpen(true)}
-                earthHintOverride={
-                  CONTEXT_MODE_PROFILES[contextMode].searchBarHint
-                }
-                hideShortcut={lockedNavigation}
+                earthHintOverride={TERRIS_SEARCH_BAR_HINT_EARTH}
+                hideShortcut={false}
                 lineOpacityEarth={explorePhase.searchLineOpacityEarth}
                 lineOpacityPlanetary={explorePhase.searchLineOpacityPlanetary}
                 lineOpacityCosmic={explorePhase.searchLineOpacityCosmic}
                 barOpacity={explorePhase.searchBarOpacity}
               />
-              <FamilyJourneyHint />
             </div>
           </div>
 
-          {!lockedNavigation ? (
-            <div className="terris-layerdock-slot">
-              <LayerDock
-                earthLayerOpacity={explorePhase.layerEarthOpacity}
-                planetaryLayerOpacity={explorePhase.layerPlanetaryOpacity}
-              />
-            </div>
-          ) : null}
+          <div className="terris-layerdock-slot">
+            <LayerDock
+              earthLayerOpacity={explorePhase.layerEarthOpacity}
+              planetaryLayerOpacity={explorePhase.layerPlanetaryOpacity}
+            />
+          </div>
 
           <div className="terris-bottom-rail">
             <ExploreBottomRail />
@@ -205,14 +242,17 @@ function AtlasShell() {
                 }
               >
                 <PlaceSheet
-                  key={selectedEntity.id}
-                  entity={selectedEntity}
+                  entity={placeSheetEntity}
                   onClose={onClosePlace}
                   onFocusGlobe={
-                    selectedEntity.coords ? onFocusGlobe : undefined
+                    (placeSheetEntity ?? selectedEntity)?.coords
+                      ? onFocusGlobe
+                      : undefined
                   }
                   onJumpToEra={onJumpToEra}
                   onOpenRelatedEntity={onOpenRelatedEntity}
+                  enrichmentLoading={enrichmentLoading}
+                  enrichmentError={enrichmentError}
                 />
               </div>
             ) : exploreMode !== 'earth' && uiMode === 'globe' ? (
@@ -224,7 +264,6 @@ function AtlasShell() {
 
       <SearchPanel />
 
-      <KioskIdleAttract />
     </div>
   )
 }

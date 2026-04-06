@@ -7,13 +7,35 @@
 export { integrationFlags } from './integrationConfig'
 export { HttpError, fetchJson, withQuery } from './fetchHelpers'
 
-export { getWikipediaSummary, searchWikipedia } from './wikipediaRestClient'
+export {
+  getWikipediaSummary,
+  searchWikipedia,
+  fetchWikipediaPageSummary,
+  fetchWikipediaPageImagesAsTerrisMedia,
+  fetchWikipediaSummaryAndLeadMedia,
+  resolveWikipediaTitleFromSearch,
+  wikipediaSummaryThumbnailToTerrisMedia,
+} from './wikipediaClient'
 export {
   searchWikidataEntities,
   getWikidataEntities,
+  getWikidataEntityForEnrichment,
   getWikidataItemWikibaseRest,
 } from './wikidataRestClient'
-export { queryWikidataSparql } from './wikidataSparqlClient'
+export {
+  queryWikidataSparql,
+  queryVenuesLandmarksForCity,
+  queryDatedEventsForPlace,
+  queryPeopleBornInPlace,
+  queryPartsOrLocatedIn,
+  queryTimelineDatesForItem,
+  queryMissionsForPlanet,
+} from './wikidataSparqlClient'
+export {
+  fetchWikipediaExtractIntroPlain,
+  fetchWikipediaExtractExtendedPlain,
+  fetchWikipediaExtractBestEffort,
+} from './mediawikiExtractsClient'
 export {
   fetchMapillaryImagesInBBox,
   type MapillaryBBox,
@@ -27,16 +49,22 @@ export {
   EXAMPLE_HISTORICAL_OVERLAYS,
 } from './historicalGeojsonClient'
 
-/** Placeholder ingestion — replace with live API calls when credentials and quotas are ready. */
 export {
+  fetchWikipediaLeadImage,
   fetchWikipediaLeadImagePlaceholder,
   type WikipediaLeadImageRequest,
 } from './wikipediaLeadImageClient'
 export {
-  fetchCommonsImagesPlaceholder,
+  fetchCommonsFileAsTerrisMedia,
+  searchCommonsFileTitles,
+  fetchCommonsImagesForQuery,
+  commonsImageInfoToTerrisMedia,
   type CommonsImageQuery,
 } from './wikimediaCommonsClient'
 export {
+  fetchIiifManifestTerrisMedia,
+  parseIiifManifestToTerrisMedia,
+  iiifLabelToString,
   fetchIiifManifestPlaceholder,
   fetchIiifImageInfoPlaceholder,
   type IiifManifestRef,
@@ -45,6 +73,14 @@ export {
   requestAiReconstructionPlaceholder,
   type AiReconstructionRequest,
 } from './aiReconstructionClient'
+export {
+  INTERPRETIVE_CLIP_DURATION_SECONDS,
+  buildInterpretiveVideoPlaceholder,
+  interpretiveVideoMetaOrDefault,
+  isInterpretiveVideoPending,
+  requestInterpretiveEducationalClip,
+  type InterpretiveVideoGenerationRequest,
+} from './interpretiveVideoArchitecture'
 export {
   requestAiShortVideoPlaceholder,
   type AiShortVideoRequest,

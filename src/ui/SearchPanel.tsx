@@ -70,6 +70,7 @@ export function SearchPanel() {
   }, [searchOpen, setSearchQuery, bumpUserInteraction])
 
   const hasAny = grouped.some((g) => g.items.length > 0)
+  const queryTrimmed = searchQuery.trim()
 
   return (
     <Dialog.Root open={searchOpen} onOpenChange={setSearchOpen}>
@@ -102,7 +103,35 @@ export function SearchPanel() {
 
             <div className="terris-search-panel__body">
               {!hasAny ? (
-                <p className="terris-search-panel__empty">No matches.</p>
+                queryTrimmed ? (
+                  <div
+                    className="terris-search-panel__empty-state terris-empty-state"
+                    role="status"
+                  >
+                    <p className="terris-search-panel__empty-title">
+                      No matches for “{queryTrimmed}”
+                    </p>
+                    <p className="terris-search-panel__empty-hint">
+                      Try a shorter phrase, check spelling, or change explore mode if the place lives
+                      on another world or scale.
+                    </p>
+                    <p className="terris-search-panel__empty-kicker">Examples</p>
+                    <p className="terris-search-panel__empty-examples">
+                      Rome · Mars · Great Pyramid · Apollo 11
+                    </p>
+                  </div>
+                ) : (
+                  <div
+                    className="terris-search-panel__empty-state terris-empty-state"
+                    role="status"
+                  >
+                    <p className="terris-search-panel__empty-title">Nothing to list in this mode</p>
+                    <p className="terris-search-panel__empty-hint">
+                      The catalog is empty for where you are exploring. Switch mode or try again
+                      after data loads.
+                    </p>
+                  </div>
+                )
               ) : (
                 <>
                   {grouped.map(

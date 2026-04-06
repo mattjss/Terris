@@ -27,5 +27,9 @@ export type PlaceSheetProps = {
   onJumpToEra?: () => void
   /** Optional: focus another entity from Related / Nearby (same mock catalog ids). */
   onOpenRelatedEntity?: (entityId: string) => void
+  /** Open-knowledge enrichment in flight (Wikidata / Wikipedia / SPARQL). */
+  enrichmentLoading?: boolean
+  /** Non-fatal enrichment failure — dossier still shows base/mock rows. */
+  enrichmentError?: string | null
   className?: string
 }

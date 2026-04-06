@@ -8,10 +8,14 @@ import {
   GLOBE_RADIUS,
 } from '@/data/historical'
 import { useExploreScaleStore } from '@/state/exploreScaleStore'
+import { globeVisualBlendRef } from '@/state/globeVisualBlendRef'
 import { useAtlasStore, useVisibleEntities } from '@/store/atlas'
+import { getGlobeVisualSnapshot } from '@/components/globe/globeVisualPresets'
 
 const _camDir = new THREE.Vector3()
 const _markerDir = new THREE.Vector3()
+const _markerTint = new THREE.Color()
+const _markerWarm = new THREE.Color('#e8d4c4')
 
 const TYPE_SCALE: Record<string, number> = {
   place: 1,
@@ -84,16 +88,29 @@ function Marker({ entity, index }: { entity: HistoricalEntity; index: number }) 
       setMarkerVisible(facing)
     }
 
+    const ex = getGlobeVisualSnapshot(globeVisualBlendRef.current).earthExplorerBlend
+    _markerTint.set(entity.color).lerp(_markerWarm, ex * 0.14)
+
     if (dotRef.current) {
       const target = isHovered || isSelected ? 1.6 : 1
       const s = dotRef.current.scale.x
       dotRef.current.scale.setScalar(s + (target - s) * 0.12)
+      const dotMat = dotRef.current.material as THREE.MeshBasicMaterial
+      dotMat.color.copy(_markerTint)
     }
 
     if (glowRef.current) {
       const target = isHovered || isSelected ? 0.15 : 0.06
       const mat = glowRef.current.material as THREE.MeshBasicMaterial
       mat.opacity += (target - mat.opacity) * 0.1
+      mat.color.copy(_markerTint)
+    }
+
+    if (ringRef.current) {
+      ;(ringRef.current.material as THREE.MeshBasicMaterial).color.copy(_markerTint)
+    }
+    if (selectedRingRef.current) {
+      ;(selectedRingRef.current.material as THREE.MeshBasicMaterial).color.copy(_markerTint)
     }
 
     if (!reducedMotion) {
@@ -124,13 +141,12 @@ function Marker({ entity, index }: { entity: HistoricalEntity; index: number }) 
 
       <mesh ref={dotRef}>
         <sphereGeometry args={[0.012 * scale, 10, 10]} />
-        <meshBasicMaterial color={entity.color} />
+        <meshBasicMaterial />
       </mesh>
 
       <mesh ref={glowRef}>
         <sphereGeometry args={[0.032 * scale, 10, 10]} />
         <meshBasicMaterial
-          color={entity.color}
           transparent
           opacity={0.06}
           blending={THREE.AdditiveBlending}

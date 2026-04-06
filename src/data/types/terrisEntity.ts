@@ -44,22 +44,87 @@ export type TerrisCoords = {
   lon: number
 }
 
+/** Grouped dossier facts — rendered in editorial sections. */
+export type TerrisFactCategory =
+  | 'identity'
+  | 'location'
+  | 'significance'
+  | 'dimensions'
+  | 'dates'
+  | 'institutions'
+  | 'other'
+
 export type TerrisFact = {
   id: string
   label: string
   value: string
-  source?: string
+  category: TerrisFactCategory
+  /** Attribution line (e.g. “City of Boston”, “MLB records”) */
+  sourceName?: string
 }
 
-export type TerrisTimelineEntry = {
+/**
+ * Normalized timeline row for educational dossiers.
+ * `year` is the primary sort key (range start for ranges).
+ */
+export type TerrisTimelineEventType = 'point' | 'range' | 'era'
+
+export type TerrisTimelineEvent = {
   id: string
-  label: string
-  startYear: number | null
-  endYear: number | null
+  title: string
+  /** Human-readable date or span, e.g. “1773 · Dec 16” or “1840–1920” */
+  dateLabel: string
+  /** Sort / map anchor (start year, or single year) */
+  year: number
+  type: TerrisTimelineEventType
   summary?: string
+  relatedEntityIds?: string[]
+  /** Inclusive end for ranges and eras */
+  endYear?: number | null
 }
+
+/** @deprecated Use TerrisTimelineEvent — alias retained for imports */
+export type TerrisTimelineEntry = TerrisTimelineEvent
 
 export type TerrisMediaType = 'image' | 'video' | 'archival' | 'reconstruction'
+
+/**
+ * Structured fields for AI-assisted or modeled still reconstructions (`type: 'reconstruction'`, `isInterpretive: true`).
+ * Not used for documentary photography.
+ */
+export type TerrisReconstructionMeta = {
+  /** Prompt or spec sent to the image model (or internal brief). */
+  prompt: string
+  /** Human-readable era anchor, e.g. “Augustan Rome, 1st c. CE”. */
+  historicalPeriod: string
+  /** Editorial confidence tier, e.g. “Illustrative — not surveyed”. */
+  confidenceLabel: string
+  /** What learners should treat as uncertain or hypothetical. */
+  interpretationNotes: string
+  /** Citations to archaeology, texts, or maps the scene draws from. */
+  sourceBasis: string
+  /** Optional key into `promptTemplates` library. */
+  promptTemplateId?: string
+}
+
+/**
+ * Placeholder / future pipeline for short interpretive clips (5–15s). Provider not wired in yet.
+ */
+export type TerrisInterpretiveVideoStatus =
+  | 'placeholder'
+  | 'queued'
+  | 'processing'
+  | 'failed'
+  | 'ready'
+
+export type TerrisInterpretiveVideoMeta = {
+  targetDurationSeconds: { min: number; max: number }
+  generationStatus: TerrisInterpretiveVideoStatus
+  /** What the clip is meant to show (educational framing). */
+  description: string
+  /** Optional: epistemic limits (weather, lighting, crowd size, etc.). */
+  whatIsUncertain?: string
+}
 
 /**
  * Editorial media asset — documentary or interpretive; license + credit required for production.
@@ -70,14 +135,39 @@ export type TerrisMediaItem = {
   title: string
   /** Publisher or API surface, e.g. “Wikimedia Commons”, “IIIF manifest”. */
   sourceName: string
+  /** Empty when `interpretiveVideoMeta` is placeholder-only (no file yet). */
   url: string
   thumbnailUrl?: string
   caption: string
   credit: string
   /** SPDX or human-readable, e.g. “CC BY-SA 4.0”, “Public domain”. */
   license?: string
+  /** Must be true for reconstructions and interpretive video; never imply documentary truth. */
   isInterpretive: boolean
+  /** Required for `type: 'reconstruction'` in production data; still renders + context. */
+  reconstructionMeta?: TerrisReconstructionMeta
+  /** Short interpretive clip metadata; `generationStatus: 'ready'` implies `url` points to playable video. */
+  interpretiveVideoMeta?: TerrisInterpretiveVideoMeta
 }
+
+/** Discovery grouping for related entities (maps from kind + optional override). */
+export type RelatedDiscoveryGroup =
+  | 'places'
+  | 'people'
+  | 'events'
+  | 'venues'
+  | 'institutions'
+  | 'artworks'
+  | 'missions'
+  | 'planets'
+  | 'other'
+
+export type NearbyAnchorKind =
+  | 'landmark'
+  | 'museum'
+  | 'venue'
+  | 'neighborhood'
+  | 'natural-feature'
 
 export type RelatedEntityRef = {
   id: string
@@ -85,6 +175,19 @@ export type RelatedEntityRef = {
   kind: TerrisEntityKind
   name: string
   role?: string
+  /** When set, overrides default kind→group mapping for the Related tab */
+  group?: RelatedDiscoveryGroup
+  /** When present on `nearby[]` entries, drives Nearby section grouping */
+  anchorKind?: NearbyAnchorKind
+}
+
+/** Tracks live vs mock enrichment without replacing editorial entity ids. */
+export type TerrisEnrichmentMeta = {
+  status: 'mock' | 'live' | 'mixed'
+  /** Some steps failed; UI may still show partial live rows. */
+  partial?: boolean
+  warnings?: string[]
+  attemptedAt?: string
 }
 
 type TerrisEntityCommon = {
@@ -102,14 +205,17 @@ type TerrisEntityCommon = {
   summary: string
   fullDescription: string
   facts: TerrisFact[]
-  timeline: TerrisTimelineEntry[]
+  timeline: TerrisTimelineEvent[]
   relatedEntities: RelatedEntityRef[]
+  /** Nearby anchors; use `anchorKind` when present for grouping */
   nearby: RelatedEntityRef[]
   media: TerrisMediaItem[]
   sources?: {
     wikidataId?: string
     wikipediaTitle?: string
     mapillarySequenceId?: string
+    /** Open-knowledge enrichment run metadata (Wikidata / Wikipedia / SPARQL). */
+    enrichment?: TerrisEnrichmentMeta
   }
 }
 

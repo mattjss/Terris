@@ -9,7 +9,9 @@ import {
   isTerrisPoiVisibleAtYear,
 } from '@/data/terrisPoi'
 import { useExploreScaleStore } from '@/state/exploreScaleStore'
+import { globeVisualBlendRef } from '@/state/globeVisualBlendRef'
 import { useTerrisStore } from '@/state/useTerrisStore'
+import { getGlobeVisualSnapshot } from '@/components/globe/globeVisualPresets'
 import { resolveTerrisEntityForPoi } from '@/ui/terrisPoiToTerrisEntity'
 
 const DOT_RADIUS = 0.014
@@ -76,6 +78,9 @@ function PoiMarker({ entity }: { entity: TerrisPoi }) {
     const dot = dotRef.current
     if (!dot) return
     const mat = dot.material as THREE.MeshBasicMaterial
+    const snap = getGlobeVisualSnapshot(globeVisualBlendRef.current)
+    _colorDim.copy(snap.poiDim)
+    _colorBright.copy(snap.poiBright)
     const targetScale = emphasize ? 1.2 : 1
     const s = dot.scale.x
     dot.scale.setScalar(s + (targetScale - s) * 0.18)

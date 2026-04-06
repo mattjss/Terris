@@ -16,17 +16,12 @@ import {
   SEARCH_PLACEHOLDER_EARTH,
   SEARCH_PLACEHOLDER_PLANETARY,
 } from '@/data/search/searchPlaceholders'
-import {
-  applyContextModeDefaults,
-  DEFAULT_TEACHER_GUIDE,
-} from '@/config/contextModeConfig'
-import type {
-  AgeRange,
-  ContentDepth,
-  ContextMode,
-  ReadingLevel,
-  TeacherGuideState,
-} from '@/state/educationalContextTypes'
+import { getPathwayById } from '@/data/learning/seedPathways'
+import type { LearningPathwaySheetTab } from '@/data/learning/pathwayTypes'
+import { useExploreScaleStore } from '@/state/exploreScaleStore'
+import { getMockEntityById } from '@/data/services/entityService'
+import { TIMELINE_YEAR_MAX, TIMELINE_YEAR_MIN } from '@/ui/Timeline'
+import type { ContentDepth } from '@/state/educationalContextTypes'
 
 export type HoveredCoords = { lat: number; lon: number }
 
@@ -81,28 +76,27 @@ export const useTerrisStore = create<{
   closeTimeMinimapLocal: () => void
   setTimeMinimapMacroId: (id: TimeEraId | null) => void
 
-  /** Product context: classroom / family / exhibit (see `contextModeConfig.ts`). */
-  contextMode: ContextMode
-  setContextMode: (mode: ContextMode) => void
-  readingLevel: ReadingLevel
-  setReadingLevel: (level: ReadingLevel) => void
-  ageRange: AgeRange | null
-  setAgeRange: (range: AgeRange | null) => void
-  sessionGoal: string | null
-  setSessionGoal: (goal: string | null) => void
-  /** Kiosk / exhibit: restrict secondary navigation (layers, shortcuts). */
-  lockedNavigation: boolean
-  setLockedNavigation: (locked: boolean) => void
+  /** Place sheet tab density — quick / standard / deep. */
   contentDepth: ContentDepth
   setContentDepth: (depth: ContentDepth) => void
-
-  teacherGuide: TeacherGuideState
-  setTeacherGuide: (patch: Partial<TeacherGuideState>) => void
-  resetTeacherGuide: () => void
 
   /** Monotonic clock for kiosk idle detection (ms since epoch). */
   lastUserInteractionAt: number
   bumpUserInteraction: () => void
+
+  /** Guided learning pathway (optional; free exploration always available). */
+  guidedPathwayId: string | null
+  guidedStepIndex: number
+  /** One-shot tab focus when applying a step — consumed by PlaceSheet. */
+  guidedSheetTabHint: LearningPathwaySheetTab | null
+  startGuidedPathway: (pathwayId: string) => void
+  exitGuidedMode: () => void
+  goToGuidedStep: (index: number) => void
+  advanceGuidedStep: () => void
+  previousGuidedStep: () => void
+  setGuidedSheetTabHint: (tab: LearningPathwaySheetTab | null) => void
+  /** Restore a pathway at a specific step (e.g. “continue where you left off”). */
+  restoreGuidedPathway: (pathwayId: string, stepIndex: number) => void
 }>((set, get) => ({
   year: 100,
   setYear: (year) => set({ year }),
@@ -189,36 +183,89 @@ export const useTerrisStore = create<{
     set({ timeMinimapScope: 'macro', timeMinimapMacroId: null }),
   setTimeMinimapMacroId: (id) => set({ timeMinimapMacroId: id }),
 
-  contextMode: 'standard',
-  setContextMode: (mode) =>
-    set((s) => {
-      const d = applyContextModeDefaults(mode)
-      const enteringTeacher = mode === 'teacher' && s.contextMode !== 'teacher'
-      return {
-        contextMode: mode,
-        readingLevel: d.readingLevel,
-        ageRange: d.ageRange,
-        contentDepth: d.contentDepth,
-        lockedNavigation: d.lockedNavigation,
-        teacherGuide: enteringTeacher ? DEFAULT_TEACHER_GUIDE : s.teacherGuide,
-      }
-    }),
-  readingLevel: 'adult',
-  setReadingLevel: (readingLevel) => set({ readingLevel }),
-  ageRange: null,
-  setAgeRange: (ageRange) => set({ ageRange }),
-  sessionGoal: null,
-  setSessionGoal: (sessionGoal) => set({ sessionGoal }),
-  lockedNavigation: false,
-  setLockedNavigation: (lockedNavigation) => set({ lockedNavigation }),
   contentDepth: 'standard',
   setContentDepth: (contentDepth) => set({ contentDepth }),
 
-  teacherGuide: DEFAULT_TEACHER_GUIDE,
-  setTeacherGuide: (patch) =>
-    set((s) => ({ teacherGuide: { ...s.teacherGuide, ...patch } })),
-  resetTeacherGuide: () => set({ teacherGuide: DEFAULT_TEACHER_GUIDE }),
-
   lastUserInteractionAt: Date.now(),
   bumpUserInteraction: () => set({ lastUserInteractionAt: Date.now() }),
+
+  guidedPathwayId: null,
+  guidedStepIndex: 0,
+  guidedSheetTabHint: null,
+
+  setGuidedSheetTabHint: (guidedSheetTabHint) => set({ guidedSheetTabHint }),
+
+  exitGuidedMode: () =>
+    set({
+      guidedPathwayId: null,
+      guidedStepIndex: 0,
+      guidedSheetTabHint: null,
+    }),
+
+  startGuidedPathway: (pathwayId) => {
+    const pathway = getPathwayById(pathwayId)
+    if (!pathway || pathway.steps.length === 0) return
+    set({ guidedPathwayId: pathwayId, guidedStepIndex: 0 })
+    applyGuidedStepAtIndex(pathwayId, 0)
+  },
+
+  goToGuidedStep: (index) => {
+    const id = get().guidedPathwayId
+    if (!id) return
+    const pathway = getPathwayById(id)
+    if (!pathway || index < 0 || index >= pathway.steps.length) return
+    set({ guidedStepIndex: index })
+    applyGuidedStepAtIndex(id, index)
+  },
+
+  advanceGuidedStep: () => {
+    const { guidedPathwayId: id, guidedStepIndex: i } = get()
+    if (!id) return
+    const pathway = getPathwayById(id)
+    if (!pathway) return
+    const next = Math.min(i + 1, pathway.steps.length - 1)
+    if (next === i) return
+    set({ guidedStepIndex: next })
+    applyGuidedStepAtIndex(id, next)
+  },
+
+  previousGuidedStep: () => {
+    const { guidedPathwayId: id, guidedStepIndex: i } = get()
+    if (!id) return
+    const prev = Math.max(0, i - 1)
+    if (prev === i) return
+    set({ guidedStepIndex: prev })
+    applyGuidedStepAtIndex(id, prev)
+  },
+
+  restoreGuidedPathway: (pathwayId, stepIndex) => {
+    const pathway = getPathwayById(pathwayId)
+    if (!pathway || stepIndex < 0 || stepIndex >= pathway.steps.length) return
+    set({ guidedPathwayId: pathwayId, guidedStepIndex: stepIndex })
+    applyGuidedStepAtIndex(pathwayId, stepIndex)
+  },
 }))
+
+function applyGuidedStepAtIndex(pathwayId: string, stepIndex: number) {
+  const pathway = getPathwayById(pathwayId)
+  const step = pathway?.steps[stepIndex]
+  if (!step) return
+
+  const entity = getMockEntityById(step.entityId)
+  if (!entity) return
+
+  const y =
+    step.year === undefined
+      ? undefined
+      : Math.max(TIMELINE_YEAR_MIN, Math.min(TIMELINE_YEAR_MAX, step.year))
+
+  useExploreScaleStore.getState().setMode(step.mode)
+  useTerrisStore.setState({
+    searchMode: step.mode,
+    searchPlaceholder: placeholderForMode(step.mode),
+    guidedSheetTabHint: step.sheetTab ?? null,
+    ...(y !== undefined ? { year: y } : {}),
+  })
+  useTerrisStore.getState().enterPlaceDetail(entity)
+  useTerrisStore.getState().bumpUserInteraction()
+}
