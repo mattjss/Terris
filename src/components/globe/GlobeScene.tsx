@@ -7,8 +7,10 @@ import { Earth } from './Earth'
 import { Atmosphere } from './Atmosphere'
 import { StarField } from './StarField'
 import { HistoricalMarkers } from './HistoricalMarkers'
-import { EmpireOverlay } from './EmpireOverlay'
+import { BoundaryPolygons } from './BoundaryPolygons'
 import { TradeRoutes } from './TradeRoutes'
+import { Coastlines } from './Coastlines'
+import { LandOutlines } from './LandOutlines'
 import { useAtlasStore } from '@/store/atlas'
 import { entities, latLngToVec3 } from '@/data/historical'
 
@@ -81,8 +83,10 @@ export function GlobeScene() {
 
       <group position={[0.1, -0.05, 0]} onPointerMissed={handlePointerMissed}>
         <Earth />
+        <Coastlines />
+        <LandOutlines />
         <Atmosphere />
-        <EmpireOverlay />
+        <BoundaryPolygons />
         <HistoricalMarkers />
         <TradeRoutes />
       </group>

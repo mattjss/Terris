@@ -1,10 +1,17 @@
-import { Suspense, useEffect } from 'react'
-import { GlobeCanvas } from '@/components/globe/GlobeCanvas'
+import { Suspense, lazy, useEffect } from 'react'
+import { Routes, Route } from 'react-router-dom'
 import { SearchBar } from '@/components/ui/SearchBar'
 import { FilterChips } from '@/components/ui/FilterChips'
 import { TimelineSlider } from '@/components/ui/TimelineSlider'
 import { InfoPanel } from '@/components/ui/InfoPanel'
+import { RouterSync } from '@/components/UrlSync'
 import { useAtlasStore } from '@/store/atlas'
+
+const GlobeCanvas = lazy(() =>
+  import('@/components/globe/GlobeCanvas').then((m) => ({
+    default: m.GlobeCanvas,
+  })),
+)
 
 function LoadingScreen() {
   return (
@@ -30,7 +37,7 @@ function LoadingScreen() {
   )
 }
 
-export default function App() {
+function AtlasShell() {
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
     const handler = () =>
@@ -41,19 +48,18 @@ export default function App() {
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-[#050608]">
-      {/* 3D Globe */}
+      <RouterSync />
       <Suspense fallback={<LoadingScreen />}>
         <GlobeCanvas />
       </Suspense>
 
-      {/* UI Overlay */}
       <div className="absolute inset-0 pointer-events-none z-10 flex flex-col">
-        {/* Top bar */}
-        <header className="
+        <header
+          className="
           pointer-events-auto flex items-start gap-4 p-4 pb-0
           max-md:flex-col max-md:gap-2 max-md:p-3
-        ">
-          {/* Branding */}
+        "
+        >
           <div className="flex flex-col gap-px shrink-0 pt-0.5">
             <h1 className="text-[13px] font-semibold tracking-[-0.02em] text-[--color-text-primary]">
               Terris
@@ -63,31 +69,35 @@ export default function App() {
             </p>
           </div>
 
-          {/* Search */}
           <div className="flex-1 flex justify-center max-md:w-full">
             <SearchBar />
           </div>
 
-          {/* Spacer to balance branding width */}
           <div className="w-[52px] shrink-0 max-md:hidden" />
         </header>
 
-        {/* Filter chips */}
         <div className="pointer-events-auto px-4 pt-2 max-md:px-3 max-md:pt-1">
           <FilterChips />
         </div>
 
-        {/* Flexible middle area */}
         <div className="flex-1 min-h-0" />
 
-        {/* Info panel (right side, absolutely positioned within the overlay) */}
         <InfoPanel />
 
-        {/* Timeline at bottom */}
         <div className="pointer-events-none">
           <TimelineSlider />
         </div>
       </div>
     </div>
+  )
+}
+
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<AtlasShell />} />
+      <Route path="/year/:year" element={<AtlasShell />} />
+      <Route path="/entity/:entityId" element={<AtlasShell />} />
+    </Routes>
   )
 }

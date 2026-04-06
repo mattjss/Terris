@@ -1,3 +1,5 @@
+import { extraEntities } from './entitiesExtra'
+
 export type EntityType = 'place' | 'empire' | 'architecture' | 'battle' | 'trade-route'
 
 export interface HistoricalEntity {
@@ -43,7 +45,7 @@ export const ENTITY_TYPE_META: { id: EntityType; label: string; color: string }[
   { id: 'trade-route', label: 'Trade Routes', color: '#4fd1c5' },
 ]
 
-export const entities: HistoricalEntity[] = [
+const baseEntities: HistoricalEntity[] = [
   // ── Places ──────────────────────────────────────────────
   {
     id: 'rome',
@@ -673,6 +675,11 @@ export const entities: HistoricalEntity[] = [
     ],
     related: ['jerusalem', 'persian-empire'],
   },
+]
+
+export const entities: HistoricalEntity[] = [
+  ...baseEntities,
+  ...(extraEntities as unknown as HistoricalEntity[]),
 ]
 
 export function latLngToVec3(

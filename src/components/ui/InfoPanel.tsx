@@ -1,26 +1,32 @@
-import { useMemo, useEffect, useCallback } from 'react'
+import { useMemo, useEffect, useCallback, useState } from 'react'
 import {
-  entities,
+  formatYear,
   formatYearRange,
   getTypeColor,
   getTypeLabel,
 } from '@/data/historical'
 import { useAtlasStore } from '@/store/atlas'
+import { useEntities } from '@/hooks/useEntities'
+import { getApiBase, aiSummarizeApi } from '@/lib/api'
 
 export function InfoPanel() {
   const { selectedId, setSelected } = useAtlasStore()
+  const currentYear = useAtlasStore((s) => s.currentYear)
+  const { data: catalog = [] } = useEntities()
+  const [aiText, setAiText] = useState<string | null>(null)
+  const [aiLoading, setAiLoading] = useState(false)
 
   const entity = useMemo(
-    () => entities.find((e) => e.id === selectedId) ?? null,
-    [selectedId],
+    () => catalog.find((e) => e.id === selectedId) ?? null,
+    [catalog, selectedId],
   )
 
   const relatedEntities = useMemo(() => {
     if (!entity?.related) return []
     return entity.related
-      .map((id) => entities.find((e) => e.id === id))
-      .filter(Boolean) as typeof entities
-  }, [entity])
+      .map((id) => catalog.find((e) => e.id === id))
+      .filter(Boolean) as typeof catalog
+  }, [entity, catalog])
 
   const handleClose = useCallback(() => setSelected(null), [setSelected])
 
@@ -28,6 +34,10 @@ export function InfoPanel() {
     (id: string) => setSelected(id),
     [setSelected],
   )
+
+  useEffect(() => {
+    setAiText(null)
+  }, [selectedId])
 
   useEffect(() => {
     if (!selectedId) return
@@ -38,9 +48,25 @@ export function InfoPanel() {
     return () => window.removeEventListener('keydown', handleKey)
   }, [selectedId, handleClose])
 
+  const handleAiExplore = useCallback(async () => {
+    if (!entity || !getApiBase()) return
+    setAiLoading(true)
+    try {
+      const res = await aiSummarizeApi({
+        entityId: entity.id,
+        year: currentYear,
+        q: 'Give a short historical overview and what to explore next.',
+      })
+      setAiText(res?.text ?? null)
+    } finally {
+      setAiLoading(false)
+    }
+  }, [entity, currentYear])
+
   if (!entity) return null
 
   const typeColor = getTypeColor(entity.type)
+  const hasApi = Boolean(getApiBase())
 
   return (
     <aside
@@ -48,9 +74,9 @@ export function InfoPanel() {
       aria-label={`Details for ${entity.name}`}
       className="
         pointer-events-auto absolute top-4 right-4 bottom-16
-        w-[280px] max-h-[calc(100vh-100px)] rounded-lg overflow-hidden
+        w-[300px] max-h-[calc(100vh-100px)] rounded-lg overflow-hidden
         animate-[fadeSlideIn_0.25s_cubic-bezier(0.22,1,0.36,1)]
-        max-md:top-auto max-md:bottom-16 max-md:left-3 max-md:right-3 max-md:w-auto max-md:max-h-[45vh]
+        max-md:top-auto max-md:bottom-16 max-md:left-3 max-md:right-3 max-md:w-auto max-md:max-h-[min(52vh,480px)]
         flex flex-col
       "
       style={{
@@ -60,8 +86,7 @@ export function InfoPanel() {
         boxShadow: '0 8px 40px rgba(0,0,0,0.35)',
       }}
     >
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
-        {/* Header */}
+      <div className="flex-1 overflow-y-auto overscroll-contain p-4 flex flex-col gap-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex flex-col gap-px min-w-0">
             <span
@@ -78,6 +103,7 @@ export function InfoPanel() {
             </span>
           </div>
           <button
+            type="button"
             onClick={handleClose}
             aria-label="Close detail panel"
             className="
@@ -91,19 +117,49 @@ export function InfoPanel() {
           </button>
         </div>
 
-        {/* Description */}
-        <p className="text-[11px] leading-[1.6] text-[--color-text-secondary]">
-          {entity.description}
-        </p>
+        <section aria-labelledby="overview-heading">
+          <h3 id="overview-heading" className="sr-only">
+            Overview
+          </h3>
+          <p className="text-[11px] leading-[1.6] text-[--color-text-secondary]">
+            {entity.description}
+          </p>
+        </section>
 
-        {/* Details */}
+        <section
+          aria-labelledby="timeline-heading"
+          className="pt-1"
+          style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}
+        >
+          <h3
+            id="timeline-heading"
+            className="text-[9px] uppercase tracking-[0.06em] text-[--color-text-muted] mb-1"
+          >
+            Timeline
+          </h3>
+          <p className="text-[10px] text-[--color-text-secondary] tabular-nums">
+            Active {formatYearRange(entity.yearStart, entity.yearEnd)} · Viewer
+            at {formatYear(currentYear)}
+          </p>
+        </section>
+
         {entity.details && entity.details.length > 0 && (
-          <div
+          <section
+            aria-labelledby="facts-heading"
             className="flex flex-col gap-1.5 pt-2"
             style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}
           >
+            <h3
+              id="facts-heading"
+              className="text-[9px] uppercase tracking-[0.06em] text-[--color-text-muted]"
+            >
+              Facts
+            </h3>
             {entity.details.map((d) => (
-              <div key={d.label} className="flex items-baseline justify-between gap-2">
+              <div
+                key={d.label}
+                className="flex items-baseline justify-between gap-2"
+              >
                 <span className="text-[9px] uppercase tracking-[0.06em] text-[--color-text-muted] shrink-0">
                   {d.label}
                 </span>
@@ -112,10 +168,9 @@ export function InfoPanel() {
                 </span>
               </div>
             ))}
-          </div>
+          </section>
         )}
 
-        {/* Coordinates */}
         {entity.type !== 'trade-route' && (
           <div
             className="pt-2 flex items-center justify-between text-[9px] text-[--color-text-muted] tabular-nums"
@@ -128,19 +183,23 @@ export function InfoPanel() {
           </div>
         )}
 
-        {/* Related */}
         {relatedEntities.length > 0 && (
-          <div
+          <section
+            aria-labelledby="related-heading"
             className="flex flex-col gap-1.5 pt-2"
             style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}
           >
-            <span className="text-[9px] uppercase tracking-[0.06em] text-[--color-text-muted]">
+            <h3
+              id="related-heading"
+              className="text-[9px] uppercase tracking-[0.06em] text-[--color-text-muted]"
+            >
               Related
-            </span>
+            </h3>
             <div className="flex flex-wrap gap-1">
               {relatedEntities.map((rel) => (
                 <button
                   key={rel.id}
+                  type="button"
                   onClick={() => handleRelatedClick(rel.id)}
                   className="
                     flex items-center gap-1 px-1.5 py-[2px] rounded
@@ -158,7 +217,40 @@ export function InfoPanel() {
                 </button>
               ))}
             </div>
-          </div>
+          </section>
+        )}
+
+        {hasApi && (
+          <section
+            aria-labelledby="explore-heading"
+            className="flex flex-col gap-2 pt-2"
+            style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}
+          >
+            <h3
+              id="explore-heading"
+              className="text-[9px] uppercase tracking-[0.06em] text-[--color-text-muted]"
+            >
+              AI exploration
+            </h3>
+            <button
+              type="button"
+              onClick={handleAiExplore}
+              disabled={aiLoading}
+              className="
+                self-start px-2 py-1 rounded text-[10px] font-medium
+                border border-[rgba(79,209,197,0.25)] text-[--color-accent]
+                hover:bg-[rgba(79,209,197,0.08)] transition-colors
+                disabled:opacity-40
+              "
+            >
+              {aiLoading ? 'Thinking…' : 'Summarize & explore'}
+            </button>
+            {aiText && (
+              <p className="text-[10px] leading-relaxed text-[--color-text-secondary]">
+                {aiText}
+              </p>
+            )}
+          </section>
         )}
       </div>
     </aside>

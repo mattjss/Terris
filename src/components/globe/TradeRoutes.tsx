@@ -100,15 +100,25 @@ export function TradeRoutes() {
     [visible],
   )
 
-  let segIdx = 0
+  const routeOffsets = useMemo(() => {
+    const offsets: number[] = []
+    let sum = 0
+    for (const r of routes) {
+      offsets.push(sum)
+      sum += (r.path?.length ?? 1) - 1
+    }
+    return offsets
+  }, [routes])
 
   return (
     <group>
-      {routes.map((route) => {
-        const idx = segIdx
-        segIdx += (route.path?.length ?? 1) - 1
-        return <TradeRoute key={route.id} entity={route} baseIndex={idx} />
-      })}
+      {routes.map((route, i) => (
+        <TradeRoute
+          key={route.id}
+          entity={route}
+          baseIndex={routeOffsets[i] ?? 0}
+        />
+      ))}
     </group>
   )
 }

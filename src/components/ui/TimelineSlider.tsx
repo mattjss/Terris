@@ -158,6 +158,8 @@ export function TimelineSlider() {
         <span
           className="text-[11px] font-medium text-[--color-accent] tabular-nums tracking-wide"
           style={{ textShadow: '0 0 12px rgba(79, 209, 197, 0.3)' }}
+          aria-live="polite"
+          aria-atomic="true"
         >
           {formatYear(currentYear)}
         </span>

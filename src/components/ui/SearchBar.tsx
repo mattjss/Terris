@@ -1,21 +1,46 @@
-import { useMemo, useRef, useEffect, useCallback } from 'react'
-import { entities, formatYear, getTypeColor } from '@/data/historical'
+import { useMemo, useRef, useEffect, useCallback, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { formatYear, getTypeColor } from '@/data/historical'
 import { useAtlasStore } from '@/store/atlas'
+import { useEntities } from '@/hooks/useEntities'
+import { getApiBase, searchEntitiesApi } from '@/lib/api'
 
 const MAX_RESULTS = 7
 
 export function SearchBar() {
-  const { searchQuery, searchOpen, setSearchQuery, setSearchOpen, setSelected } = useAtlasStore()
+  const { searchQuery, searchOpen, setSearchQuery, setSearchOpen, setSelected } =
+    useAtlasStore()
   const inputRef = useRef<HTMLInputElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const { data: catalog = [] } = useEntities()
+  const [debounced, setDebounced] = useState('')
+
+  useEffect(() => {
+    const t = window.setTimeout(() => setDebounced(searchQuery.trim()), 280)
+    return () => window.clearTimeout(t)
+  }, [searchQuery])
+
+  const api = getApiBase()
+  const { data: remoteResults } = useQuery({
+    queryKey: ['search', debounced],
+    enabled: Boolean(api && debounced.length > 0),
+    queryFn: async () => {
+      const r = await searchEntitiesApi(debounced)
+      return r ?? []
+    },
+    staleTime: 30_000,
+  })
 
   const results = useMemo(() => {
-    if (!searchQuery.trim()) return []
-    const q = searchQuery.toLowerCase()
-    return entities
+    const q = searchQuery.trim().toLowerCase()
+    if (!q) return []
+    if (remoteResults && remoteResults.length > 0) {
+      return remoteResults.slice(0, MAX_RESULTS)
+    }
+    return catalog
       .filter((e) => e.name.toLowerCase().includes(q))
       .slice(0, MAX_RESULTS)
-  }, [searchQuery])
+  }, [searchQuery, catalog, remoteResults])
 
   const handleSelect = useCallback(
     (id: string) => {
@@ -27,7 +52,11 @@ export function SearchBar() {
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === '/' && !searchOpen && document.activeElement?.tagName !== 'INPUT') {
+      if (
+        e.key === '/' &&
+        !searchOpen &&
+        document.activeElement?.tagName !== 'INPUT'
+      ) {
         e.preventDefault()
         setSearchOpen(true)
         inputRef.current?.focus()
@@ -44,7 +73,10 @@ export function SearchBar() {
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
         setSearchOpen(false)
       }
     }
@@ -55,18 +87,35 @@ export function SearchBar() {
   }, [searchOpen, setSearchOpen])
 
   return (
-    <div ref={containerRef} className="relative w-full max-w-[320px] max-md:max-w-none">
+    <div
+      ref={containerRef}
+      className="relative w-full max-w-[320px] max-md:max-w-none"
+    >
       <div
         className="flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors duration-150"
         style={{
           background: searchOpen ? 'rgba(8,10,16,0.8)' : 'rgba(8,10,16,0.5)',
           backdropFilter: 'blur(20px)',
-          borderColor: searchOpen ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)',
+          borderColor: searchOpen
+            ? 'rgba(255,255,255,0.08)'
+            : 'rgba(255,255,255,0.04)',
         }}
       >
-        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" className="shrink-0 opacity-25">
+        <svg
+          width="13"
+          height="13"
+          viewBox="0 0 16 16"
+          fill="none"
+          className="shrink-0 opacity-25"
+          aria-hidden
+        >
           <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.5" />
-          <path d="M11 11L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          <path
+            d="M11 11L14 14"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
         </svg>
         <input
           ref={inputRef}
@@ -79,6 +128,7 @@ export function SearchBar() {
           onFocus={() => setSearchOpen(true)}
           placeholder="Search places, empires, landmarks..."
           aria-label="Search historical entities"
+          autoComplete="off"
           className="
             w-full bg-transparent border-none outline-none
             text-[11px] text-[--color-text-primary]
@@ -124,7 +174,9 @@ export function SearchBar() {
                   {entity.name}
                 </p>
                 <p className="text-[9px] text-[--color-text-muted] truncate">
-                  {entity.type === 'trade-route' ? 'Trade Route' : entity.type.charAt(0).toUpperCase() + entity.type.slice(1)}
+                  {entity.type === 'trade-route'
+                    ? 'Trade Route'
+                    : entity.type.charAt(0).toUpperCase() + entity.type.slice(1)}
                   {' · '}
                   {entity.yearStart === entity.yearEnd
                     ? formatYear(entity.yearStart)

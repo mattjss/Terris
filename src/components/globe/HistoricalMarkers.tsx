@@ -1,4 +1,4 @@
-import { useRef, useMemo, useCallback } from 'react'
+import { useRef, useMemo, useCallback, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Html } from '@react-three/drei'
 import * as THREE from 'three'
@@ -25,7 +25,8 @@ function Marker({ entity, index }: { entity: HistoricalEntity; index: number }) 
   const dotRef = useRef<THREE.Mesh>(null)
   const glowRef = useRef<THREE.Mesh>(null)
   const selectedRingRef = useRef<THREE.Mesh>(null)
-  const visibleRef = useRef(true)
+  const [markerVisible, setMarkerVisible] = useState(true)
+  const prevFacingRef = useRef<boolean | null>(null)
 
   const selectedId = useAtlasStore((s) => s.selectedId)
   const hoveredId = useAtlasStore((s) => s.hoveredId)
@@ -76,7 +77,10 @@ function Marker({ entity, index }: { entity: HistoricalEntity; index: number }) 
     _markerDir.copy(position).normalize()
     const facing = _markerDir.dot(_camDir) > -0.1
     groupRef.current.visible = facing
-    visibleRef.current = facing
+    if (prevFacingRef.current !== facing) {
+      prevFacingRef.current = facing
+      setMarkerVisible(facing)
+    }
 
     if (dotRef.current) {
       const target = isHovered || isSelected ? 1.6 : 1
@@ -156,7 +160,7 @@ function Marker({ entity, index }: { entity: HistoricalEntity; index: number }) 
         </mesh>
       )}
 
-      {isHovered && visibleRef.current && (
+      {isHovered && markerVisible && (
         <Html
           distanceFactor={8}
           style={{ pointerEvents: 'none', userSelect: 'none' }}
