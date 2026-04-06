@@ -12,23 +12,19 @@ import { ExploreBottomRail } from '@/ui/ExploreBottomRail'
 import { SearchBar } from '@/ui/SearchBar'
 import { PlaceSheet } from '@/ui/PlaceSheet'
 import { LayerDock } from '@/ui/LayerDock'
-import { ExploreModeContextBar } from '@/ui/ExploreModeContextBar'
 import { PlanetaryObjectSheetPlaceholder } from '@/ui/PlanetaryObjectSheetPlaceholder'
 import { useExploreUiPhase } from '@/ui/useExploreUiPhase'
 import { findTerrisPoiById } from '@/data/terrisPoi'
 import { getMockEntityById, hydrateTerrisEntity } from '@/data/services/entityService'
 import type { TerrisEntity } from '@/data/types/terrisEntity'
 import { resolveTerrisEntityForPoi } from '@/ui/terrisPoiToTerrisEntity'
-import { TERRIS_SEARCH_BAR_HINT_EARTH } from '@/config/terrisPresentationConfig'
-import { ContentDepthPicker } from '@/ui/ContentDepthPicker'
-import { GuidedPathwayDock } from '@/ui/GuidedPathwayDock'
+import { TerrisOptionsMenu } from '@/ui/TerrisOptionsMenu'
 import { useEnrichedEntity } from '@/hooks/useEnrichedEntity'
 import { createLearningJournalPersistence } from '@/persistence/createLearningJournalPersistence'
 import { useLearningJournalStore } from '@/state/useLearningJournalStore'
 import { hydrateGlobeVisualBlendRef } from '@/state/globeVisualModeStore'
 import { useGlobeVisualModeStore } from '@/state/globeVisualModeStore'
 import { LearningJournalSync } from '@/ui/LearningJournalSync'
-import { ContinueLearningBanner } from '@/ui/ContinueLearningBanner'
 import { GlobeModeSwitcher } from '@/ui/GlobeModeSwitcher'
 import './styles.css'
 
@@ -191,30 +187,24 @@ function AtlasShell() {
 
       <div className="terris-ui">
         <div className="terris-shell">
-          <div className="terris-brand-stack">
-            <div className="terris-brand-mark">
-              <span className="terris-brand-mark__name">Terris</span>
-              <span className="terris-brand-mark__tag">Atlas</span>
+          <header className="terris-top-bar">
+            <div className="terris-top-bar__left">
+              <div className="terris-brand-mark">
+                <span className="terris-brand-mark__name">Terris</span>
+                <span className="terris-brand-mark__tag">Atlas</span>
+              </div>
+              <TerrisOptionsMenu />
             </div>
-            <ContentDepthPicker />
-            <ContinueLearningBanner />
-            <GuidedPathwayDock />
-          </div>
-
-          <div className="terris-explore-mode-slot">
-            <ExploreModeContextBar />
-            <GlobeModeSwitcher />
-          </div>
+            <div className="terris-top-bar__right">
+              <GlobeModeSwitcher variant="compact" />
+            </div>
+          </header>
 
           <div className="terris-search-float">
             <div className="terris-search-column">
               <SearchBar
                 onOpen={() => setSearchOpen(true)}
-                earthHintOverride={TERRIS_SEARCH_BAR_HINT_EARTH}
                 hideShortcut={false}
-                lineOpacityEarth={explorePhase.searchLineOpacityEarth}
-                lineOpacityPlanetary={explorePhase.searchLineOpacityPlanetary}
-                lineOpacityCosmic={explorePhase.searchLineOpacityCosmic}
                 barOpacity={explorePhase.searchBarOpacity}
               />
             </div>

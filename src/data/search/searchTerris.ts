@@ -51,6 +51,19 @@ export function searchTerrisEntities(
   return matched
 }
 
+/**
+ * One search field across all explorer scales — matches any catalog entity when `query` is non-empty.
+ * Empty query returns [] (caller shows starter prompts instead of dumping the full catalog).
+ */
+export function searchTerrisEntitiesUnified(query: string): TerrisEntity[] {
+  const q = query.trim().toLowerCase()
+  const all = Object.values(MOCK_ENTITY_CATALOG)
+  if (!q) return []
+  const matched = all.filter((e) => haystackForSearch(e).includes(q))
+  matched.sort((a, b) => compareSearchRank(a, b, q))
+  return matched
+}
+
 export type GroupedSearchResults = {
   type: TerrisEntityKind
   label: string

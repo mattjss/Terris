@@ -1,24 +1,23 @@
 import { useEffect, useId, useMemo, useRef } from 'react'
-import {
-  SEARCH_PLACEHOLDER_COSMIC,
-  SEARCH_PLACEHOLDER_EARTH,
-  SEARCH_PLACEHOLDER_PLANETARY,
-} from '@/data/search/searchPlaceholders'
+import { TERRIS_UNIFIED_SEARCH_PLACEHOLDER } from '@/config/terrisPresentationConfig'
 
 export type SearchBarProps = {
   /** Called when the user activates the bar (click) or the global shortcut (⌘K / Ctrl+K). */
   onOpen: () => void
-  /** Replaces the Earth-scale hint line when set (e.g. family / teacher copy). */
-  earthHintOverride?: string
-  /** Hide keyboard shortcut hint (e.g. kiosk / locked navigation). */
+  /** Overrides unified placeholder copy. */
+  placeholder?: string
+  /** Hide keyboard shortcut hint. */
   hideShortcut?: boolean
   className?: string
-  /** Stacked placeholder opacities (sum crossfades; same button, no remount). */
+  /** Whole control opacity (e.g. mid-transition dip). */
+  barOpacity?: number
+  /**
+   * @deprecated Single-field search — stacked placeholders removed. Ignored.
+   */
+  earthHintOverride?: string
   lineOpacityEarth?: number
   lineOpacityPlanetary?: number
   lineOpacityCosmic?: number
-  /** Whole control opacity (e.g. mid-transition dip). */
-  barOpacity?: number
 }
 
 function isApplePlatform(): boolean {
@@ -29,12 +28,9 @@ function isApplePlatform(): boolean {
 
 export function SearchBar({
   onOpen,
-  earthHintOverride,
+  placeholder = TERRIS_UNIFIED_SEARCH_PLACEHOLDER,
   hideShortcut = false,
   className,
-  lineOpacityEarth = 1,
-  lineOpacityPlanetary = 0,
-  lineOpacityCosmic = 0,
   barOpacity = 1,
 }: SearchBarProps) {
   const labelId = useId()
@@ -100,34 +96,8 @@ export function SearchBar({
             />
           </svg>
         </span>
-        <span id={labelId} className="terris-search-bar__placeholder-stack">
-          <span
-            className="terris-search-bar__placeholder-line"
-            style={{
-              opacity: lineOpacityEarth,
-              transition: 'opacity 2100ms cubic-bezier(0.22, 1, 0.36, 1)',
-            }}
-          >
-            {earthHintOverride ?? SEARCH_PLACEHOLDER_EARTH}
-          </span>
-          <span
-            className="terris-search-bar__placeholder-line"
-            style={{
-              opacity: lineOpacityPlanetary,
-              transition: 'opacity 2100ms cubic-bezier(0.22, 1, 0.36, 1)',
-            }}
-          >
-            {SEARCH_PLACEHOLDER_PLANETARY}
-          </span>
-          <span
-            className="terris-search-bar__placeholder-line"
-            style={{
-              opacity: lineOpacityCosmic,
-              transition: 'opacity 2100ms cubic-bezier(0.22, 1, 0.36, 1)',
-            }}
-          >
-            {SEARCH_PLACEHOLDER_COSMIC}
-          </span>
+        <span id={labelId} className="terris-search-bar__placeholder">
+          {placeholder}
         </span>
         {hideShortcut ? null : (
           <kbd className="terris-search-bar__kbd" aria-hidden>

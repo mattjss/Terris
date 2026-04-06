@@ -258,7 +258,7 @@ export function TimeMinimap() {
               ← All eras
             </button>
           ) : (
-            <span className="terris-time-minimap__eyebrow">Timeline</span>
+            <span className="terris-time-minimap__eyebrow">Time</span>
           )}
         </div>
         <div className="terris-time-minimap__readout-wrap">
@@ -314,8 +314,8 @@ export function TimeMinimap() {
 
       <p className="terris-time-minimap__hint">
         {isLocal
-          ? `Drag to scrub within ${focusedMacro?.label}. Double-click snaps to the nearest sub-period.`
-          : 'Drag or click the bar to set the year. Double-click to zoom into an era.'}
+          ? `Within ${focusedMacro?.label} · double-click to snap to a period`
+          : 'Drag to move through time · double-click an era for detail'}
       </p>
 
       <div

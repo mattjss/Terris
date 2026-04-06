@@ -11,11 +11,7 @@ import {
   getEraMidYear,
   getMacroEraById,
 } from '@/ui/timeEras'
-import {
-  SEARCH_PLACEHOLDER_COSMIC,
-  SEARCH_PLACEHOLDER_EARTH,
-  SEARCH_PLACEHOLDER_PLANETARY,
-} from '@/data/search/searchPlaceholders'
+import { TERRIS_UNIFIED_SEARCH_PLACEHOLDER } from '@/config/terrisPresentationConfig'
 import { getPathwayById } from '@/data/learning/seedPathways'
 import type { LearningPathwaySheetTab } from '@/data/learning/pathwayTypes'
 import { useExploreScaleStore } from '@/state/exploreScaleStore'
@@ -25,10 +21,8 @@ import type { ContentDepth } from '@/state/educationalContextTypes'
 
 export type HoveredCoords = { lat: number; lon: number }
 
-function placeholderForMode(mode: ExplorerMode): string {
-  if (mode === 'planetary') return SEARCH_PLACEHOLDER_PLANETARY
-  if (mode === 'cosmic') return SEARCH_PLACEHOLDER_COSMIC
-  return SEARCH_PLACEHOLDER_EARTH
+function placeholderForMode(_mode: ExplorerMode): string {
+  return TERRIS_UNIFIED_SEARCH_PLACEHOLDER
 }
 
 export const useTerrisStore = create<{

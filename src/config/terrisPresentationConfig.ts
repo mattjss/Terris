@@ -19,8 +19,21 @@ const PLACE_SHEET_TABS = {
   deep: ALL_TABS,
 }
 
-/** Earth-scale search bar first line (planetary/cosmic use placeholders from search). */
-export const TERRIS_SEARCH_BAR_HINT_EARTH = 'Search places, people, worlds…'
+/** Single search field — all scales (Earth / planetary / cosmic) in one flow. */
+export const TERRIS_UNIFIED_SEARCH_PLACEHOLDER =
+  'Search places, people, stories, and worlds…'
+
+/** Legacy Earth-only line; prefer `TERRIS_UNIFIED_SEARCH_PLACEHOLDER`. */
+export const TERRIS_SEARCH_BAR_HINT_EARTH = TERRIS_UNIFIED_SEARCH_PLACEHOLDER
+
+/** Curated starter prompts for the search panel (labels + query text). */
+export const SEARCH_STARTER_PROMPTS: readonly { label: string; query: string }[] = [
+  { label: 'Ancient Rome', query: 'Rome' },
+  { label: 'Pyramids', query: 'Pyramid' },
+  { label: 'Apollo 11', query: 'Apollo' },
+  { label: 'Boston', query: 'Boston' },
+  { label: 'Mars', query: 'Mars' },
+] as const
 
 /** Copy when no entity is selected in the place sheet. */
 export const EMPTY_PLACE_SHEET_TEASER =

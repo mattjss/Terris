@@ -98,14 +98,12 @@ function IconNature() {
 function IconArt() {
   return (
     <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-      <rect x="12" y="14" width="24" height="20" rx="2" stroke="currentColor" strokeWidth="1.2" />
-      <circle cx="20" cy="22" r="2" fill="currentColor" opacity="0.35" />
+      <rect x="12" y="14" width="24" height="22" rx="2" stroke="currentColor" strokeWidth="1.2" />
       <path
-        d="M14 32c4-4 8-6 20-6"
+        d="M14 34c4-6 6-8 10-4"
         stroke="currentColor"
         strokeWidth="1.2"
         strokeLinecap="round"
-        opacity="0.5"
       />
     </svg>
   )
@@ -138,14 +136,30 @@ function IconWar() {
   )
 }
 
-const LAYERS: LayerDef[] = [
+const FINE_LAYERS: LayerDef[] = [
   { id: 'people', label: 'People', icon: <IconPeople /> },
   { id: 'places', label: 'Places', icon: <IconPlaces /> },
   { id: 'events', label: 'Events', icon: <IconEvents /> },
   { id: 'empires', label: 'Empires', icon: <IconEmpires /> },
   { id: 'nature', label: 'Nature', icon: <IconNature /> },
   { id: 'art', label: 'Art', icon: <IconArt /> },
-  { id: 'war', label: 'War', icon: <IconWar /> },
+  { id: 'war', label: 'Conflict', icon: <IconWar /> },
+]
+
+type EarthLensId = 'culture' | 'civilization' | 'living'
+
+const EARTH_LENSES: { id: EarthLensId; label: string; layers: LayerId[] }[] = [
+  {
+    id: 'culture',
+    label: 'People & culture',
+    layers: ['people', 'events', 'art'],
+  },
+  {
+    id: 'civilization',
+    label: 'Places & power',
+    layers: ['places', 'empires', 'war'],
+  },
+  { id: 'living', label: 'Living world', layers: ['nature'] },
 ]
 
 export type PlanetaryLayerId = 'surface' | 'atmosphere' | 'missions' | 'moons'
@@ -216,28 +230,73 @@ function IconMoons() {
   )
 }
 
-const PLANETARY_LAYERS: PlanetaryLayerDef[] = [
+const PLANETARY_FINE: PlanetaryLayerDef[] = [
   { id: 'surface', label: 'Surface', icon: <IconSurface /> },
   { id: 'atmosphere', label: 'Atmosphere', icon: <IconAtmosphere /> },
   { id: 'missions', label: 'Missions', icon: <IconMissions /> },
   { id: 'moons', label: 'Moons', icon: <IconMoons /> },
 ]
 
+type PlanetaryLensId = 'world' | 'exploration'
+
+const PLANETARY_LENSES: { id: PlanetaryLensId; label: string; layers: PlanetaryLayerId[] }[] = [
+  { id: 'world', label: 'World', layers: ['surface', 'atmosphere'] },
+  { id: 'exploration', label: 'Exploration', layers: ['missions', 'moons'] },
+]
+
 const MOCK_PLANETARY_ACTIVE: PlanetaryLayerId[] = ['surface', 'moons']
 
-/** Mock default: a few layers on to show the UI in isolation. */
+/** Mock default — matches previous prototype mix. */
 const MOCK_INITIAL_ACTIVE: LayerId[] = ['places', 'nature', 'art']
 
+function lensFullyOnEarth<T extends LayerId>(
+  layers: readonly T[],
+  active: ReadonlySet<LayerId>,
+): boolean {
+  return layers.every((id) => active.has(id))
+}
+
+function toggleEarthLens(
+  lens: (typeof EARTH_LENSES)[number],
+  active: ReadonlySet<LayerId>,
+): Set<LayerId> {
+  const next = new Set(active)
+  const full = lensFullyOnEarth(lens.layers, active)
+  if (full) {
+    lens.layers.forEach((id) => next.delete(id))
+  } else {
+    lens.layers.forEach((id) => next.add(id))
+  }
+  return next
+}
+
+function lensFullyOnPlanetary(
+  layers: readonly PlanetaryLayerId[],
+  active: ReadonlySet<PlanetaryLayerId>,
+): boolean {
+  return layers.every((id) => active.has(id))
+}
+
+function togglePlanetaryLens(
+  lens: (typeof PLANETARY_LENSES)[number],
+  active: ReadonlySet<PlanetaryLayerId>,
+): Set<PlanetaryLayerId> {
+  const next = new Set(active)
+  const full = lensFullyOnPlanetary(lens.layers, active)
+  if (full) {
+    lens.layers.forEach((id) => next.delete(id))
+  } else {
+    lens.layers.forEach((id) => next.add(id))
+  }
+  return next
+}
+
 export type LayerDockProps = {
-  /** Optional controlled set. When omitted, internal mock state is used. */
   activeLayers?: ReadonlySet<LayerId>
-  /** Initial selection when uncontrolled. */
   initialActiveLayers?: LayerId[]
   onLayersChange?: (layers: LayerId[]) => void
   className?: string
-  /** Earth stack label visibility (0–1). */
   earthLayerOpacity?: number
-  /** Planetary stack label visibility (0–1). */
   planetaryLayerOpacity?: number
 }
 
@@ -256,18 +315,34 @@ export function LayerDock({
   const [planetaryInternal, setPlanetaryInternal] = useState<Set<PlanetaryLayerId>>(
     () => new Set(MOCK_PLANETARY_ACTIVE),
   )
+  const [earthFineOpen, setEarthFineOpen] = useState(false)
+  const [planetFineOpen, setPlanetFineOpen] = useState(false)
 
   const active = controlled ? activeProp! : internal
 
-  const toggle = useCallback(
+  const setEarth = useCallback(
+    (next: Set<LayerId>) => {
+      if (!controlled) setInternal(next)
+      onLayersChange?.([...next])
+    },
+    [controlled, onLayersChange],
+  )
+
+  const toggleFine = useCallback(
     (id: LayerId) => {
       const next = new Set(active)
       if (next.has(id)) next.delete(id)
       else next.add(id)
-      if (!controlled) setInternal(next)
-      onLayersChange?.([...next])
+      setEarth(next)
     },
-    [active, controlled, onLayersChange],
+    [active, setEarth],
+  )
+
+  const onLensEarth = useCallback(
+    (lens: (typeof EARTH_LENSES)[number]) => {
+      setEarth(toggleEarthLens(lens, active))
+    },
+    [active, setEarth],
   )
 
   const togglePlanetary = useCallback((id: PlanetaryLayerId) => {
@@ -277,6 +352,10 @@ export function LayerDock({
       else next.add(id)
       return next
     })
+  }, [])
+
+  const onLensPlanetary = useCallback((lens: (typeof PLANETARY_LENSES)[number]) => {
+    setPlanetaryInternal((prev) => togglePlanetaryLens(lens, prev))
   }, [])
 
   const uid = useId()
@@ -293,67 +372,135 @@ export function LayerDock({
     >
       <div className="terris-layerdock__panel">
         <p id={labelId} className="terris-layerdock__title">
-          Layers
+          Map focus
         </p>
+
         <div className="terris-layerdock__stacks">
-          <ul
-            className="terris-layerdock__list terris-layerdock__list--earth"
-            role="list"
+          <div
+            className="terris-layerdock__stack terris-layerdock__stack--earth"
             style={{
               opacity: earthLayerOpacity,
               transition: tf,
               pointerEvents: earthPointer,
             }}
           >
-            {LAYERS.map((layer) => {
-              const isOn = active.has(layer.id)
-              return (
-                <li key={layer.id}>
+            <div className="terris-layerdock__lenses" role="group" aria-label="Earth layers">
+              {EARTH_LENSES.map((lens) => {
+                const on = lensFullyOnEarth(lens.layers, active)
+                const partial =
+                  !on && lens.layers.some((id) => active.has(id))
+                return (
                   <button
+                    key={lens.id}
                     type="button"
                     className={
-                      'terris-layerdock__btn' +
-                      (isOn ? ' terris-layerdock__btn--active' : '')
+                      'terris-layerdock__lens' +
+                      (on ? ' terris-layerdock__lens--active' : '') +
+                      (partial ? ' terris-layerdock__lens--partial' : '')
                     }
-                    aria-pressed={isOn}
-                    onClick={() => toggle(layer.id)}
+                    aria-pressed={on}
+                    onClick={() => onLensEarth(lens)}
                   >
-                    <span className="terris-layerdock__icon">{layer.icon}</span>
-                    <span className="terris-layerdock__label">{layer.label}</span>
+                    <span className="terris-layerdock__lens-label">{lens.label}</span>
                   </button>
-                </li>
-              )
-            })}
-          </ul>
-          <ul
-            className="terris-layerdock__list terris-layerdock__list--planetary"
-            role="list"
+                )
+              })}
+            </div>
+            <button
+              type="button"
+              className="terris-layerdock__disclosure"
+              aria-expanded={earthFineOpen}
+              onClick={() => setEarthFineOpen((v) => !v)}
+            >
+              {earthFineOpen ? 'Hide' : 'Show'} topic filters
+            </button>
+            {earthFineOpen ? (
+              <ul className="terris-layerdock__list terris-layerdock__list--fine" role="list">
+                {FINE_LAYERS.map((layer) => {
+                  const isOn = active.has(layer.id)
+                  return (
+                    <li key={layer.id}>
+                      <button
+                        type="button"
+                        className={
+                          'terris-layerdock__btn' +
+                          (isOn ? ' terris-layerdock__btn--active' : '')
+                        }
+                        aria-pressed={isOn}
+                        onClick={() => toggleFine(layer.id)}
+                      >
+                        <span className="terris-layerdock__icon">{layer.icon}</span>
+                        <span className="terris-layerdock__label">{layer.label}</span>
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
+            ) : null}
+          </div>
+
+          <div
+            className="terris-layerdock__stack terris-layerdock__stack--planetary"
             style={{
               opacity: planetaryLayerOpacity,
               transition: tf,
               pointerEvents: planetPointer,
             }}
           >
-            {PLANETARY_LAYERS.map((layer) => {
-              const isOn = planetaryInternal.has(layer.id)
-              return (
-                <li key={layer.id}>
+            <div className="terris-layerdock__lenses" role="group" aria-label="Planetary layers">
+              {PLANETARY_LENSES.map((lens) => {
+                const on = lensFullyOnPlanetary(lens.layers, planetaryInternal)
+                const partial =
+                  !on && lens.layers.some((id) => planetaryInternal.has(id))
+                return (
                   <button
+                    key={lens.id}
                     type="button"
                     className={
-                      'terris-layerdock__btn' +
-                      (isOn ? ' terris-layerdock__btn--active' : '')
+                      'terris-layerdock__lens' +
+                      (on ? ' terris-layerdock__lens--active' : '') +
+                      (partial ? ' terris-layerdock__lens--partial' : '')
                     }
-                    aria-pressed={isOn}
-                    onClick={() => togglePlanetary(layer.id)}
+                    aria-pressed={on}
+                    onClick={() => onLensPlanetary(lens)}
                   >
-                    <span className="terris-layerdock__icon">{layer.icon}</span>
-                    <span className="terris-layerdock__label">{layer.label}</span>
+                    <span className="terris-layerdock__lens-label">{lens.label}</span>
                   </button>
-                </li>
-              )
-            })}
-          </ul>
+                )
+              })}
+            </div>
+            <button
+              type="button"
+              className="terris-layerdock__disclosure"
+              aria-expanded={planetFineOpen}
+              onClick={() => setPlanetFineOpen((v) => !v)}
+            >
+              {planetFineOpen ? 'Hide' : 'Show'} detail filters
+            </button>
+            {planetFineOpen ? (
+              <ul className="terris-layerdock__list terris-layerdock__list--fine" role="list">
+                {PLANETARY_FINE.map((layer) => {
+                  const isOn = planetaryInternal.has(layer.id)
+                  return (
+                    <li key={layer.id}>
+                      <button
+                        type="button"
+                        className={
+                          'terris-layerdock__btn' +
+                          (isOn ? ' terris-layerdock__btn--active' : '')
+                        }
+                        aria-pressed={isOn}
+                        onClick={() => togglePlanetary(layer.id)}
+                      >
+                        <span className="terris-layerdock__icon">{layer.icon}</span>
+                        <span className="terris-layerdock__label">{layer.label}</span>
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
+            ) : null}
+          </div>
         </div>
       </div>
     </nav>

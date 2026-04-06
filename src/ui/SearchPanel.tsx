@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { Button } from '@base-ui/react/button'
 import { Dialog } from '@base-ui/react/dialog'
-import { groupSearchResultsByType, searchTerrisEntities } from '@/data/search/searchTerris'
+import { SEARCH_STARTER_PROMPTS, TERRIS_UNIFIED_SEARCH_PLACEHOLDER } from '@/config/terrisPresentationConfig'
+import {
+  groupSearchResultsByType,
+  searchTerrisEntitiesUnified,
+} from '@/data/search/searchTerris'
+import { useExploreScaleStore } from '@/state/exploreScaleStore'
 import { useTerrisStore } from '@/state/useTerrisStore'
 import type { TerrisEntity } from '@/data/types/terrisEntity'
 
@@ -15,21 +20,20 @@ function useModKeyLabel(): string {
 export function SearchPanel() {
   const searchOpen = useTerrisStore((s) => s.searchOpen)
   const setSearchOpen = useTerrisStore((s) => s.setSearchOpen)
-  const searchMode = useTerrisStore((s) => s.searchMode)
-  const searchPlaceholder = useTerrisStore((s) => s.searchPlaceholder)
   const searchQuery = useTerrisStore((s) => s.searchQuery)
   const setSearchQuery = useTerrisStore((s) => s.setSearchQuery)
   const enterPlaceDetail = useTerrisStore((s) => s.enterPlaceDetail)
   const setSearchResults = useTerrisStore((s) => s.setSearchResults)
   const setSelectedSearchResultId = useTerrisStore((s) => s.setSelectedSearchResultId)
   const bumpUserInteraction = useTerrisStore((s) => s.bumpUserInteraction)
+  const setExploreMode = useExploreScaleStore((s) => s.setMode)
 
   const inputRef = useRef<HTMLInputElement>(null)
   const modHint = useModKeyLabel()
 
   const grouped = useMemo(
-    () => groupSearchResultsByType(searchTerrisEntities(searchMode, searchQuery)),
-    [searchMode, searchQuery],
+    () => groupSearchResultsByType(searchTerrisEntitiesUnified(searchQuery)),
+    [searchQuery],
   )
 
   useEffect(() => {
@@ -40,11 +44,18 @@ export function SearchPanel() {
   const onPickEntity = useCallback(
     (entity: TerrisEntity) => {
       setSelectedSearchResultId(entity.id)
+      setExploreMode(entity.mode)
       enterPlaceDetail(entity)
       setSearchOpen(false)
       setSearchQuery('')
     },
-    [enterPlaceDetail, setSearchOpen, setSearchQuery, setSelectedSearchResultId],
+    [
+      enterPlaceDetail,
+      setExploreMode,
+      setSearchOpen,
+      setSearchQuery,
+      setSelectedSearchResultId,
+    ],
   )
 
   useEffect(() => {
@@ -71,6 +82,15 @@ export function SearchPanel() {
 
   const hasAny = grouped.some((g) => g.items.length > 0)
   const queryTrimmed = searchQuery.trim()
+  const showStarters = !queryTrimmed
+
+  const applyStarter = useCallback(
+    (q: string) => {
+      setSearchQuery(q)
+      inputRef.current?.focus()
+    },
+    [setSearchQuery],
+  )
 
   return (
     <Dialog.Root open={searchOpen} onOpenChange={setSearchOpen}>
@@ -80,7 +100,9 @@ export function SearchPanel() {
           <Dialog.Popup className="terris-search-panel" initialFocus={inputRef}>
             <Dialog.Title className="sr-only">Terris search</Dialog.Title>
             <div className="terris-search-panel__head">
-              <span className="terris-search-panel__hint">{modHint}</span>
+              <span className="terris-search-panel__hint" aria-hidden>
+                {modHint}
+              </span>
               <Button
                 type="button"
                 className="terris-search-panel__close"
@@ -94,7 +116,7 @@ export function SearchPanel() {
               ref={inputRef}
               type="search"
               className="terris-search-panel__input"
-              placeholder={searchPlaceholder}
+              placeholder={TERRIS_UNIFIED_SEARCH_PLACEHOLDER}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               autoComplete="off"
@@ -102,36 +124,36 @@ export function SearchPanel() {
             />
 
             <div className="terris-search-panel__body">
-              {!hasAny ? (
-                queryTrimmed ? (
-                  <div
-                    className="terris-search-panel__empty-state terris-empty-state"
-                    role="status"
-                  >
-                    <p className="terris-search-panel__empty-title">
-                      No matches for “{queryTrimmed}”
-                    </p>
-                    <p className="terris-search-panel__empty-hint">
-                      Try a shorter phrase, check spelling, or change explore mode if the place lives
-                      on another world or scale.
-                    </p>
-                    <p className="terris-search-panel__empty-kicker">Examples</p>
-                    <p className="terris-search-panel__empty-examples">
-                      Rome · Mars · Great Pyramid · Apollo 11
-                    </p>
-                  </div>
-                ) : (
-                  <div
-                    className="terris-search-panel__empty-state terris-empty-state"
-                    role="status"
-                  >
-                    <p className="terris-search-panel__empty-title">Nothing to list in this mode</p>
-                    <p className="terris-search-panel__empty-hint">
-                      The catalog is empty for where you are exploring. Switch mode or try again
-                      after data loads.
-                    </p>
-                  </div>
-                )
+              {showStarters ? (
+                <div className="terris-search-panel__starters" role="region" aria-label="Suggestions">
+                  <p className="terris-search-panel__starters-lede">Start with a topic or place</p>
+                  <ul className="terris-search-panel__chips">
+                    {SEARCH_STARTER_PROMPTS.map((p) => (
+                      <li key={p.label}>
+                        <button
+                          type="button"
+                          className="terris-search-chip"
+                          onClick={() => applyStarter(p.query)}
+                        >
+                          {p.label}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : !hasAny ? (
+                <div
+                  className="terris-search-panel__empty-state terris-empty-state"
+                  role="status"
+                >
+                  <p className="terris-search-panel__empty-title">
+                    No matches for “{queryTrimmed}”
+                  </p>
+                  <p className="terris-search-panel__empty-hint">
+                    Try a shorter phrase or another spelling. Search looks across places, people, and
+                    worlds in the catalog.
+                  </p>
+                </div>
               ) : (
                 <>
                   {grouped.map(
