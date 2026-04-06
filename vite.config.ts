@@ -12,6 +12,10 @@ export default defineConfig({
     },
   },
   server: {
+    /** Use this URL in the browser — if 5173 is busy Vite picks the next port. */
+    port: 5173,
+    strictPort: false,
+    open: true,
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:3001',

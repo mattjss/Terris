@@ -7,6 +7,7 @@ import {
   latLngToVec3,
   GLOBE_RADIUS,
 } from '@/data/historical'
+import { useExploreScaleStore } from '@/state/exploreScaleStore'
 import { useAtlasStore, useVisibleEntities } from '@/store/atlas'
 
 const _camDir = new THREE.Vector3()
@@ -28,6 +29,7 @@ function Marker({ entity, index }: { entity: HistoricalEntity; index: number }) 
   const [markerVisible, setMarkerVisible] = useState(true)
   const prevFacingRef = useRef<boolean | null>(null)
 
+  const labelOpacity = useExploreScaleStore((s) => s.earthCityLabelsOpacity)
   const selectedId = useAtlasStore((s) => s.selectedId)
   const hoveredId = useAtlasStore((s) => s.hoveredId)
   const reducedMotion = useAtlasStore((s) => s.reducedMotion)
@@ -160,10 +162,10 @@ function Marker({ entity, index }: { entity: HistoricalEntity; index: number }) 
         </mesh>
       )}
 
-      {isHovered && markerVisible && (
+      {isHovered && markerVisible && labelOpacity > 0.04 && (
         <Html
           distanceFactor={8}
-          style={{ pointerEvents: 'none', userSelect: 'none' }}
+          style={{ pointerEvents: 'none', userSelect: 'none', opacity: labelOpacity }}
           center
           position={[0, 0, 0.1]}
         >

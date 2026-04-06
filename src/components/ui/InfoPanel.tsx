@@ -73,17 +73,17 @@ export function InfoPanel() {
       role="region"
       aria-label={`Details for ${entity.name}`}
       className="
-        pointer-events-auto absolute top-4 right-4 bottom-16
-        w-[300px] max-h-[calc(100vh-100px)] rounded-lg overflow-hidden
+        pointer-events-auto absolute right-6 top-28 bottom-32 z-[20]
+        w-[300px] max-h-[calc(100vh-11rem)] overflow-hidden rounded-none
         animate-[fadeSlideIn_0.25s_cubic-bezier(0.22,1,0.36,1)]
-        max-md:top-auto max-md:bottom-16 max-md:left-3 max-md:right-3 max-md:w-auto max-md:max-h-[min(52vh,480px)]
-        flex flex-col
+        max-md:bottom-36 max-md:left-3 max-md:right-3 max-md:top-auto max-md:max-h-[min(52vh,480px)] max-md:w-auto
+        flex flex-col font-[family-name:var(--font-terris-mono)]
       "
       style={{
-        background: 'rgba(8,10,16,0.75)',
-        backdropFilter: 'blur(24px) saturate(1.15)',
-        border: '1px solid rgba(255,255,255,0.05)',
-        boxShadow: '0 8px 40px rgba(0,0,0,0.35)',
+        background: 'rgba(0,0,0,0.72)',
+        backdropFilter: 'blur(20px)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        boxShadow: '0 8px 48px rgba(0,0,0,0.55)',
       }}
     >
       <div className="flex-1 overflow-y-auto overscroll-contain p-4 flex flex-col gap-3">

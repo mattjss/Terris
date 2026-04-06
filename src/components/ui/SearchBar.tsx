@@ -2,14 +2,16 @@ import { useMemo, useRef, useEffect, useCallback, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { formatYear, getTypeColor } from '@/data/historical'
 import { useAtlasStore } from '@/store/atlas'
+import { useTerrisStore } from '@/state/useTerrisStore'
 import { useEntities } from '@/hooks/useEntities'
 import { getApiBase, searchEntitiesApi } from '@/lib/api'
 
 const MAX_RESULTS = 7
 
 export function SearchBar() {
-  const { searchQuery, searchOpen, setSearchQuery, setSearchOpen, setSelected } =
-    useAtlasStore()
+  const searchOpen = useTerrisStore((s) => s.searchOpen)
+  const setSearchOpen = useTerrisStore((s) => s.setSearchOpen)
+  const { searchQuery, setSearchQuery, setSelected } = useAtlasStore()
   const inputRef = useRef<HTMLInputElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const { data: catalog = [] } = useEntities()

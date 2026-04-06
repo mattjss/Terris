@@ -6,10 +6,12 @@ import {
   useSearchParams,
 } from 'react-router-dom'
 import { useAtlasStore } from '@/store/atlas'
-import { YEAR_DEFAULT, YEAR_MAX, YEAR_MIN, entities } from '@/data/historical'
+import { useTerrisStore } from '@/state/useTerrisStore'
+import { YEAR_DEFAULT, entities } from '@/data/historical'
+import { TIMELINE_YEAR_MAX, TIMELINE_YEAR_MIN } from '@/ui/Timeline'
 
-function clampYear(y: number): number {
-  return Math.max(YEAR_MIN, Math.min(YEAR_MAX, y))
+function clampTimelineYear(y: number): number {
+  return Math.max(TIMELINE_YEAR_MIN, Math.min(TIMELINE_YEAR_MAX, y))
 }
 
 function pathFromStore(year: number, selectedId: string | null): string {
@@ -38,8 +40,8 @@ export function RouterSync() {
     const yQ = yFromQuery !== null ? parseInt(yFromQuery, 10) : Number.NaN
 
     let year: number | null = null
-    if (!Number.isNaN(yFromPath)) year = clampYear(yFromPath)
-    else if (!Number.isNaN(yQ)) year = clampYear(yQ)
+    if (!Number.isNaN(yFromPath)) year = clampTimelineYear(yFromPath)
+    else if (!Number.isNaN(yQ)) year = clampTimelineYear(yQ)
 
     if (entityId && entities.some((e) => e.id === entityId)) {
       useAtlasStore.getState().setSelected(entityId)
@@ -52,24 +54,24 @@ export function RouterSync() {
     }
 
     if (year !== null) {
-      useAtlasStore.getState().setYear(year)
+      useTerrisStore.getState().setYear(year)
     }
 
     hydrated.current = true
   }, [entityId, yearParam, searchParams, location.pathname])
 
-  const currentYear = useAtlasStore((s) => s.currentYear)
+  const year = useTerrisStore((s) => s.year)
   const selectedId = useAtlasStore((s) => s.selectedId)
 
   useEffect(() => {
     if (!hydrated.current) return
 
-    const next = pathFromStore(currentYear, selectedId)
+    const next = pathFromStore(year, selectedId)
     const current = `${location.pathname}${location.search}`
     if (next === current) return
 
     navigate(next, { replace: true })
-  }, [currentYear, selectedId, navigate, location.pathname, location.search])
+  }, [year, selectedId, navigate, location.pathname, location.search])
 
   return null
 }

@@ -1,5 +1,17 @@
 import { create } from 'zustand'
 import { type EntityType, type HistoricalEntity, entities, isVisibleAtYear, YEAR_DEFAULT } from '@/data/historical'
+import { useTerrisStore } from '@/state/useTerrisStore'
+
+/** Updated from the Three.js globe (throttled) for overlay readouts. */
+export interface GlobeViewState {
+  /** Center of screen raycast on the globe (degrees). */
+  centerLat: number
+  centerLng: number
+  /** Camera distance from globe center (world units). */
+  distance: number
+  /** Mirrors OrbitControls auto-rotate when nothing is selected. */
+  autoRotating: boolean
+}
 
 interface AtlasState {
   currentYear: number
@@ -7,15 +19,15 @@ interface AtlasState {
   hoveredId: string | null
   activeFilters: EntityType[]
   searchQuery: string
-  searchOpen: boolean
   reducedMotion: boolean
+  globeView: GlobeViewState
 
   setYear: (year: number) => void
   setSelected: (id: string | null) => void
   setHovered: (id: string | null) => void
   toggleFilter: (type: EntityType) => void
   setSearchQuery: (query: string) => void
-  setSearchOpen: (open: boolean) => void
+  setGlobeView: (patch: Partial<GlobeViewState>) => void
 }
 
 export const useAtlasStore = create<AtlasState>((set) => ({
@@ -24,11 +36,17 @@ export const useAtlasStore = create<AtlasState>((set) => ({
   hoveredId: null,
   activeFilters: [],
   searchQuery: '',
-  searchOpen: false,
   reducedMotion:
     typeof window !== 'undefined'
       ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
       : false,
+
+  globeView: {
+    centerLat: 0,
+    centerLng: 0,
+    distance: 5.2,
+    autoRotating: true,
+  },
 
   setYear: (year) => set({ currentYear: year }),
   setSelected: (id) => {
@@ -38,11 +56,14 @@ export const useAtlasStore = create<AtlasState>((set) => ({
         const midYear = entity.yearStart === entity.yearEnd
           ? entity.yearStart
           : Math.round((entity.yearStart + entity.yearEnd) / 2)
-        set({ selectedId: id, currentYear: midYear, searchOpen: false, searchQuery: '' })
+        set({ selectedId: id, currentYear: midYear, searchQuery: '' })
+        useTerrisStore.getState().setYear(midYear)
+        useTerrisStore.getState().setSearchOpen(false)
         return
       }
     }
-    set({ selectedId: id, searchOpen: false, searchQuery: '' })
+    set({ selectedId: id, searchQuery: '' })
+    useTerrisStore.getState().setSearchOpen(false)
   },
   setHovered: (id) => set({ hoveredId: id }),
   toggleFilter: (type) =>
@@ -52,7 +73,10 @@ export const useAtlasStore = create<AtlasState>((set) => ({
         : [...state.activeFilters, type],
     })),
   setSearchQuery: (query) => set({ searchQuery: query }),
-  setSearchOpen: (open) => set({ searchOpen: open }),
+  setGlobeView: (patch) =>
+    set((state) => ({
+      globeView: { ...state.globeView, ...patch },
+    })),
 }))
 
 export function useVisibleEntities(): HistoricalEntity[] {

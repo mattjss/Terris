@@ -6,39 +6,35 @@ export function FilterChips() {
 
   return (
     <div
-      className="flex flex-wrap gap-1"
+      className="flex flex-wrap gap-1.5"
       role="group"
       aria-label="Layer filters"
     >
       {ENTITY_TYPE_META.map((meta) => {
+        const pressed = activeFilters.includes(meta.id as EntityType)
         const active =
-          activeFilters.length === 0 || activeFilters.includes(meta.id as EntityType)
+          activeFilters.length === 0 || pressed
         return (
           <button
             key={meta.id}
             onClick={() => toggleFilter(meta.id as EntityType)}
-            aria-pressed={activeFilters.includes(meta.id as EntityType)}
+            aria-pressed={pressed}
             className="
               flex items-center gap-1.5
-              px-2 py-[3px] rounded-full text-[9px] font-medium
+              px-2.5 py-[5px] rounded-none text-[9px] font-medium
               border transition-colors duration-150 cursor-pointer
+              font-[family-name:var(--font-terris-mono)] tracking-[0.06em] uppercase
             "
             style={{
-              borderColor: active
-                ? `${meta.color}28`
-                : 'rgba(255,255,255,0.04)',
-              background: active
-                ? `${meta.color}0a`
-                : 'transparent',
-              color: active
-                ? meta.color
-                : 'rgba(255,255,255,0.18)',
+              borderColor: active ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.06)',
+              background: active ? 'rgba(255,255,255,0.04)' : 'transparent',
+              color: active ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.22)',
             }}
           >
             <span
-              className="w-[5px] h-[5px] rounded-full transition-colors duration-150"
+              className="h-[5px] w-[5px] shrink-0 rounded-none transition-colors duration-150"
               style={{
-                background: active ? meta.color : 'rgba(255,255,255,0.1)',
+                background: active ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.12)',
               }}
             />
             {meta.label}

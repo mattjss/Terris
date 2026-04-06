@@ -1,6 +1,21 @@
 import * as THREE from 'three'
 import { latLngToVec3 } from '@/data/historical'
 
+/**
+ * Inverse of {@link latLngToVec3} for a point in the same local space (sphere center at origin).
+ */
+export function vec3ToLatLng(v: THREE.Vector3): { lat: number; lng: number } {
+  const n = v.clone()
+  const r = n.length()
+  if (r < 1e-8) return { lat: 0, lng: 0 }
+  n.multiplyScalar(1 / r)
+  const phi = Math.acos(THREE.MathUtils.clamp(n.y, -1, 1))
+  const lat = 90 - (phi * 180) / Math.PI
+  const theta = Math.atan2(n.z, -n.x)
+  const lng = (theta * 180) / Math.PI - 180
+  return { lat, lng }
+}
+
 export function lngLatToVec3(lng: number, lat: number, radius: number): THREE.Vector3 {
   const [x, y, z] = latLngToVec3(lat, lng, radius)
   return new THREE.Vector3(x, y, z)

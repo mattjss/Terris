@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
 import * as THREE from 'three'
 
-const COUNT = 2400
-const RADIUS = 120
+const COUNT = 3600
+const RADIUS = 145
 
 /** Deterministic PRNG for stable star positions (avoids impure Math.random in render). */
 function mulberry32(seed: number) {
@@ -23,7 +23,7 @@ export function StarField() {
     for (let i = 0; i < COUNT; i++) {
       v.set(rnd() * 2 - 1, rnd() * 2 - 1, rnd() * 2 - 1)
         .normalize()
-        .multiplyScalar(RADIUS + rnd() * 50)
+        .multiplyScalar(RADIUS + rnd() * 72)
 
       positions[i * 3] = v.x
       positions[i * 3 + 1] = v.y
@@ -38,11 +38,11 @@ export function StarField() {
   return (
     <points geometry={geometry} frustumCulled={false}>
       <pointsMaterial
-        color={0xffffff}
-        size={0.12}
+        color={0xb4bcc8}
+        size={0.065}
         sizeAttenuation
         transparent
-        opacity={0.55}
+        opacity={0.38}
         depthWrite={false}
       />
     </points>
