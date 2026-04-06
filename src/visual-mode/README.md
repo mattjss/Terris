@@ -29,12 +29,14 @@ One product shell, one Three.js scene, two **educational lenses**. Modes affect 
 ## Explorer Mode (cozy illustration)
 
 - **Color**: Warmer void `#1a1f2e`, lavender-leaning atmosphere edge.
-- **Lighting**: Warmer key `#fff4e8`, softer fill, stronger rim.
-- **Earth**: Same data; gentle warm lift + softer gamma in shader.
+- **Skydome**: Multicolor gradient (`GlobeExplorerSky`) + `scene.background` cleared when blend > ~0.06.
+- **Lighting**: Warmer key, stronger rim; additive atmosphere uses `atmosphereGlowMul` + Explorer limb boost.
+- **Earth**: Fresnel rim, illustrated desaturation mix, ocean shimmer (`uTime`), warmer lift + gamma in shader.
 - **Clouds**: Slightly more opaque, faster drift.
-- **Markers**: Warmer dim/bright for Terris POIs; history dots lerp toward paper-warm.
+- **Markers**: Warmer dim/bright; selected POI scales up further in Explorer (arrival moment).
+- **Travel craft**: `TravelCraft` — minimal cone + emissive ring parented to camera (Earth, Explorer).
+- **Camera**: `THREE.MathUtils.damp` toward focus targets (`cameraDampLambda` lower in Explorer = silkier glide).
 - **UI**: Plum-tinted glass, peach-leaning borders, softer focus ring.
-- **Camera**: Slightly looser damping, snappier focus lerp.
 - **Post (target)**: Subtle bloom + vignette (CSS vignette on canvas today).
 
 ## Coherence

@@ -22,7 +22,7 @@ export function SearchPanel() {
   const setSearchOpen = useTerrisStore((s) => s.setSearchOpen)
   const searchQuery = useTerrisStore((s) => s.searchQuery)
   const setSearchQuery = useTerrisStore((s) => s.setSearchQuery)
-  const enterPlaceDetail = useTerrisStore((s) => s.enterPlaceDetail)
+  const beginJourneyToEntity = useTerrisStore((s) => s.beginJourneyToEntity)
   const setSearchResults = useTerrisStore((s) => s.setSearchResults)
   const setSelectedSearchResultId = useTerrisStore((s) => s.setSelectedSearchResultId)
   const bumpUserInteraction = useTerrisStore((s) => s.bumpUserInteraction)
@@ -45,12 +45,12 @@ export function SearchPanel() {
     (entity: TerrisEntity) => {
       setSelectedSearchResultId(entity.id)
       setExploreMode(entity.mode)
-      enterPlaceDetail(entity)
+      beginJourneyToEntity(entity)
       setSearchOpen(false)
       setSearchQuery('')
     },
     [
-      enterPlaceDetail,
+      beginJourneyToEntity,
       setExploreMode,
       setSearchOpen,
       setSearchQuery,

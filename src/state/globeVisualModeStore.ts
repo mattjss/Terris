@@ -6,10 +6,11 @@ const STORAGE_KEY = 'terris-globe-visual-mode'
 export type GlobeVisualMode = 'atlas' | 'explorer'
 
 function loadStoredMode(): GlobeVisualMode {
-  if (typeof localStorage === 'undefined') return 'atlas'
+  if (typeof localStorage === 'undefined') return 'explorer'
   const v = localStorage.getItem(STORAGE_KEY)
   if (v === 'explorer' || v === 'atlas') return v
-  return 'atlas'
+  /** Beauty-first default for new installs — returning users keep an explicit saved choice. */
+  return 'explorer'
 }
 
 type GlobeVisualModeState = {
@@ -18,7 +19,7 @@ type GlobeVisualModeState = {
 }
 
 export const useGlobeVisualModeStore = create<GlobeVisualModeState>((set) => ({
-  mode: typeof window !== 'undefined' ? loadStoredMode() : 'atlas',
+  mode: typeof window !== 'undefined' ? loadStoredMode() : 'explorer',
   setMode: (mode) => {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(STORAGE_KEY, mode)

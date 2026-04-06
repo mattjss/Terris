@@ -18,6 +18,8 @@ import { useExploreScaleStore } from '@/state/exploreScaleStore'
 import { getMockEntityById } from '@/data/services/entityService'
 import { TIMELINE_YEAR_MAX, TIMELINE_YEAR_MIN } from '@/ui/Timeline'
 import type { ContentDepth } from '@/state/educationalContextTypes'
+import { useAtlasStore } from '@/store/atlas'
+import { useJourneyPhaseStore } from '@/state/useJourneyPhaseStore'
 
 export type HoveredCoords = { lat: number; lon: number }
 
@@ -51,6 +53,8 @@ export const useTerrisStore = create<{
   placeDetailTransitionPhase: PlaceDetailTransitionPhase
   /** Enter focused entity sheet; Earth hubs request globe focus when coords exist. */
   enterPlaceDetail: (entity: TerrisEntity) => void
+  /** Browse → travel → portal → arrival → study (search / POI / related). */
+  beginJourneyToEntity: (entity: TerrisEntity) => void
   /** Leave place detail and return to globe exploration. */
   exitPlaceDetail: () => void
   selectedEntity: TerrisEntity | null
@@ -117,6 +121,7 @@ export const useTerrisStore = create<{
   uiMode: 'globe',
   placeDetailTransitionPhase: 'idle',
   enterPlaceDetail: (entity) => {
+    useJourneyPhaseStore.setState({ phase: 'study', targetEntity: null })
     set({
       uiMode: 'place_detail',
       placeDetailTransitionPhase: 'entering',
@@ -128,7 +133,23 @@ export const useTerrisStore = create<{
     }
     queueMicrotask(() => set({ placeDetailTransitionPhase: 'active' }))
   },
+  beginJourneyToEntity: (entity) => {
+    if (useAtlasStore.getState().reducedMotion) {
+      get().enterPlaceDetail(entity)
+      return
+    }
+    set({
+      uiMode: 'globe',
+      placeDetailTransitionPhase: 'idle',
+      lastUserInteractionAt: Date.now(),
+    })
+    useJourneyPhaseStore.getState().startTravel(entity)
+    if (entity.mode === 'earth' && entity.coords) {
+      get().requestGlobeFocus(entity.coords.lat, entity.coords.lon)
+    }
+  },
   exitPlaceDetail: () => {
+    useJourneyPhaseStore.getState().resetToBrowse()
     if (get().uiMode !== 'place_detail') {
       set({ selectedEntity: null, placeDetailTransitionPhase: 'idle' })
       return

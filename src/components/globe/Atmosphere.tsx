@@ -25,6 +25,8 @@ uniform vec3 uSunDir;
 uniform vec3 uDeep;
 uniform vec3 uEdge;
 uniform float uDayBoost;
+uniform float uExplorerBlend;
+uniform float uGlowMul;
 varying vec3 vWorldNormal;
 varying vec3 vViewDir;
 
@@ -32,8 +34,11 @@ void main() {
   vec3 n = normalize(vWorldNormal);
   vec3 v = normalize(vViewDir);
   float limb = 1.0 - abs(dot(n, v));
-  float inner = pow(limb, 2.6) * 0.11;
-  float outer = pow(limb, 5.4) * 0.13;
+  float ex = clamp(uExplorerBlend, 0.0, 1.0);
+  float limbPowInner = mix(2.6, 2.15, ex);
+  float limbPowOuter = mix(5.4, 4.35, ex);
+  float inner = pow(limb, limbPowInner) * mix(0.11, 0.2, ex);
+  float outer = pow(limb, limbPowOuter) * mix(0.13, 0.24, ex);
   float sunLit = max(dot(n, normalize(uSunDir)), 0.0);
   float daySide = smoothstep(0.0, 0.5, sunLit);
 
@@ -41,7 +46,8 @@ void main() {
   vec3 edge = uEdge;
   vec3 color = mix(deep, edge, clamp(outer * 2.1, 0.0, 1.0));
   color += vec3(0.02, 0.04, 0.07) * daySide * inner * 3.0 * uDayBoost;
-  float alpha = (inner + outer) * uOpacity;
+  color += vec3(0.12, 0.06, 0.18) * outer * ex * 0.55;
+  float alpha = (inner + outer) * uOpacity * uGlowMul;
 
   gl_FragColor = vec4(color, alpha);
 }
@@ -67,6 +73,8 @@ export function Atmosphere() {
           uDeep: { value: new THREE.Vector3(0.035, 0.07, 0.14) },
           uEdge: { value: new THREE.Vector3(0.11, 0.18, 0.3) },
           uDayBoost: { value: 1 },
+          uExplorerBlend: { value: 0 },
+          uGlowMul: { value: 1 },
         },
         side: THREE.BackSide,
         transparent: true,
@@ -82,6 +90,8 @@ export function Atmosphere() {
     material.uniforms.uDeep.value.copy(snap.atmosphereDeep)
     material.uniforms.uEdge.value.copy(snap.atmosphereEdge)
     material.uniforms.uDayBoost.value = snap.atmosphereDayBoost
+    material.uniforms.uExplorerBlend.value = snap.earthExplorerBlend
+    material.uniforms.uGlowMul.value = snap.atmosphereGlowMul
   })
 
   return (

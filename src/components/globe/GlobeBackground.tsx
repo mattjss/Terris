@@ -10,9 +10,11 @@ export function GlobeBackground() {
   const color = useMemo(() => new THREE.Color(), [])
 
   useFrame(() => {
-    const bg = getGlobeVisualSnapshot(globeVisualBlendRef.current).background
+    const t = globeVisualBlendRef.current
+    const bg = getGlobeVisualSnapshot(t).background
     color.set(bg)
-    scene.background = color
+    /* Explorer uses skydome mesh — clear color stays dark at gaps / edges. */
+    scene.background = t > 0.06 ? null : color
   })
 
   return null

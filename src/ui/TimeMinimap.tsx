@@ -63,14 +63,11 @@ export function TimeMinimap() {
   const [hoverSubId, setHoverSubId] = useState<string | null>(null)
   const [reducedMotion, setReducedMotion] = useState(false)
 
-  /** Primary = compact strip; expanded on hover, focus-within, drag, or pin. */
-  const [shellHover, setShellHover] = useState(false)
-  const [focusWithinShell, setFocusWithinShell] = useState(false)
-  const [pinnedExpanded, setPinnedExpanded] = useState(false)
+  /** Default tiny bar; opens on explicit click (or while dragging scrubber). */
+  const [timelineOpen, setTimelineOpen] = useState(false)
   const shellRef = useRef<HTMLDivElement>(null)
 
-  const uiExpanded =
-    shellHover || dragging || focusWithinShell || pinnedExpanded
+  const uiExpanded = timelineOpen || dragging
 
   const focusedMacro = timeMinimapMacroId
     ? getMacroEraById(timeMinimapMacroId)
@@ -93,6 +90,10 @@ export function TimeMinimap() {
     const e = getEraForYear(year)
     setTimeMinimapMacroId(e.id)
   }, [year, isLocal, timeMinimapMacroId, setTimeMinimapMacroId])
+
+  useEffect(() => {
+    if (isLocal) setTimelineOpen(true)
+  }, [isLocal])
 
   const updateFromClientX = useCallback(
     (clientX: number) => {
@@ -226,20 +227,13 @@ export function TimeMinimap() {
       ref={shellRef}
       className={
         'terris-time-minimap-shell' +
-        (uiExpanded ? ' terris-time-minimap-shell--expanded' : '')
+        (uiExpanded
+          ? ' terris-time-minimap-shell--open'
+          : ' terris-time-minimap-shell--collapsed')
       }
-      onMouseEnter={() => setShellHover(true)}
-      onMouseLeave={() => {
-        if (!dragging) setShellHover(false)
-      }}
-      onFocusCapture={() => setFocusWithinShell(true)}
-      onBlurCapture={(e) => {
-        const next = e.relatedTarget as Node | null
-        if (next && shellRef.current?.contains(next)) return
-        setFocusWithinShell(false)
-      }}
     >
       <div
+        id="terris-time-minimap-panel"
         className={
           'terris-time-minimap' +
           (uiExpanded ? ' terris-time-minimap--expanded' : ' terris-time-minimap--compact')
@@ -252,10 +246,13 @@ export function TimeMinimap() {
             <button
               type="button"
               className="terris-time-minimap__back"
-              onClick={() => closeTimeMinimapLocal()}
+              onClick={() => {
+                closeTimeMinimapLocal()
+                setTimelineOpen(false)
+              }}
               aria-label="Show all eras"
             >
-              ← All eras
+              ← Eras
             </button>
           ) : (
             <span className="terris-time-minimap__eyebrow">Time</span>
@@ -267,20 +264,21 @@ export function TimeMinimap() {
           </span>
         </div>
         <div className="terris-time-minimap__header-right">
-          <button
-            type="button"
-            className="terris-time-minimap__pin"
-            aria-expanded={uiExpanded}
-            aria-label={pinnedExpanded ? 'Minimize timeline panel' : 'Pin timeline panel open'}
-            title={pinnedExpanded ? 'Minimize' : 'Pin open'}
-            onClick={(e) => {
-              e.stopPropagation()
-              setPinnedExpanded((p) => !p)
-            }}
-          >
-            {pinnedExpanded ? '▾' : '▴'}
-          </button>
-          <span className="terris-time-minimap__context">
+          {!isLocal ? (
+            <button
+              type="button"
+              className="terris-time-minimap__toggle"
+              aria-expanded={timelineOpen}
+              aria-controls="terris-time-minimap-panel"
+              title={timelineOpen ? 'Collapse timeline' : 'Expand timeline'}
+              onClick={() => setTimelineOpen((o) => !o)}
+            >
+              <span className="terris-time-minimap__toggle-icon" aria-hidden>
+                {timelineOpen ? '▾' : '▸'}
+              </span>
+            </button>
+          ) : null}
+          <span className="terris-time-minimap__context" title={displayMacro.label}>
             {displayMacro.label}
             {isLocal ? <span className="terris-time-minimap__context-mark"> · detail</span> : null}
           </span>
@@ -312,11 +310,13 @@ export function TimeMinimap() {
         </div>
       </div>
 
-      <p className="terris-time-minimap__hint">
-        {isLocal
-          ? `Within ${focusedMacro?.label} · double-click to snap to a period`
-          : 'Drag to move through time · double-click an era for detail'}
-      </p>
+      {uiExpanded ? (
+        <p className="terris-time-minimap__hint">
+          {isLocal
+            ? `Within ${focusedMacro?.label} · double-click to snap`
+            : 'Drag · double-click an era for sub-periods'}
+        </p>
+      ) : null}
 
       <div
         ref={trackRef}
@@ -445,29 +445,36 @@ export function TimeMinimap() {
         </div>
       </div>
 
-      <div className="terris-time-minimap__labels" aria-hidden>
-        {!isLocal &&
-          TIME_ERAS.map((era) => {
-            const mid = (era.start + era.end) / 2
-            const pct = yearToTimelineFraction(mid) * 100
-            return (
-              <span key={era.id} className="terris-time-minimap__label" style={{ left: `${pct}%` }}>
-                {era.label}
-              </span>
-            )
-          })}
-        {isLocal &&
-          focusedMacro &&
-          getSubPeriodsForMacro(focusedMacro.id).map((sub) => {
-            const mid = (sub.start + sub.end) / 2
-            const pct = yearToMacroLocalFraction(mid, focusedMacro) * 100
-            return (
-              <span key={sub.id} className="terris-time-minimap__label" style={{ left: `${pct}%` }}>
-                {sub.label}
-              </span>
-            )
-          })}
-      </div>
+      {uiExpanded ? (
+        <div className="terris-time-minimap__labels-row" aria-hidden>
+          {!isLocal &&
+            TIME_ERAS.map((era) => (
+              <div
+                key={era.id}
+                className="terris-time-minimap__label-cell"
+                style={{ width: `${eraSpanFraction(era) * 100}%` }}
+                title={era.label}
+              >
+                <span className="terris-time-minimap__label-text">{era.label}</span>
+              </div>
+            ))}
+          {isLocal &&
+            focusedMacro &&
+            getSubPeriodsForMacro(focusedMacro.id).map((sub) => {
+              const { widthPct } = layoutSubPeriodInMacro(sub, focusedMacro)
+              return (
+                <div
+                  key={sub.id}
+                  className="terris-time-minimap__label-cell"
+                  style={{ width: `${widthPct}%` }}
+                  title={sub.label}
+                >
+                  <span className="terris-time-minimap__label-text">{sub.label}</span>
+                </div>
+              )
+            })}
+        </div>
+      ) : null}
       </div>
     </div>
   )

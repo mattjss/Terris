@@ -1,6 +1,6 @@
 /**
  * GLSL for the layered Earth mesh — day / topo / night / ocean spec / normal detail.
- * Texture bindings are documented in `earthTextureSlots.ts`.
+ * Explorer adds Fresnel rim, softer read, and subtle ocean shimmer (time-driven).
  */
 
 export const earthVertexShader = /* glsl */ `
@@ -26,6 +26,7 @@ uniform sampler2D nightLightsMap;
 uniform sampler2D specularMap;
 uniform vec3 sunDirection;
 uniform float uExplorerBlend;
+uniform float uTime;
 
 varying vec2 vUv;
 varying vec3 vWorldNormal;
@@ -36,7 +37,6 @@ void main() {
   vec3 sun = normalize(sunDirection);
   float ndl = dot(n, sun);
 
-  /* Wide terminator — readable twilight without a hard sci-fi edge. */
   float dayMix = smoothstep(-0.36, 0.4, ndl);
   float twilight = (1.0 - dayMix) * smoothstep(-0.55, -0.1, ndl);
 
@@ -64,16 +64,31 @@ void main() {
   vec3 color = mix(night, albedo, dayMix);
   color = mix(color, color * vec3(0.9, 0.95, 1.06) + vec3(0.008, 0.015, 0.028), twilight * 0.4);
 
+  vec3 vV = normalize(vViewDir);
   vec3 rv = reflect(-sun, n);
   float specPow = mix(14.0, 56.0, ocean);
   float specAmt = mix(specMask * 0.22, specMask, ocean);
-  float spec = pow(max(dot(rv, normalize(vViewDir)), 0.0), specPow) * specAmt * dayMix;
+  float spec = pow(max(dot(rv, vV), 0.0), specPow) * specAmt * dayMix;
   color += spec * vec3(0.26, 0.34, 0.42);
 
   float ex = clamp(uExplorerBlend, 0.0, 1.0);
+
+  /* Softer, more illustrated land/ocean in Explorer — less micro-contrast. */
+  color = mix(color, mix(color, vec3(dot(color, vec3(0.299, 0.587, 0.114))), 0.22), ex * 0.35);
+  float fresnel = pow(1.0 - max(dot(n, vV), 0.0), 3.1);
+  vec3 rimCol = vec3(0.52, 0.42, 0.68);
+  color += rimCol * fresnel * ex * 0.42 * (0.35 + 0.65 * dayMix);
+
+  /* Subtle ocean shimmer — magical, not noisy. */
+  if (ocean > 0.45) {
+    float sh = sin(uTime * 1.15 + vUv.x * 38.0 + vUv.y * 26.0) * 0.5 + 0.5;
+    sh += sin(uTime * 0.85 - vUv.x * 22.0) * 0.15;
+    color += vec3(0.045, 0.09, 0.14) * sh * dayMix * ocean * ex * 0.2;
+  }
+
   vec3 warmLift = vec3(0.04, 0.03, 0.02);
-  color = mix(color, color * vec3(1.04, 1.06, 1.1) + warmLift * 0.25, ex * 0.38);
-  color = pow(max(color, vec3(0.001)), mix(vec3(1.0), vec3(0.94), ex * 0.18));
+  color = mix(color, color * vec3(1.04, 1.06, 1.1) + warmLift * 0.25, ex * 0.45);
+  color = pow(max(color, vec3(0.001)), mix(vec3(1.0), vec3(0.92), ex * 0.22));
 
   gl_FragColor = vec4(color, 1.0);
 }

@@ -19,6 +19,8 @@ export type GlobeVisualSnapshot = {
   atmosphereDeep: THREE.Vector3
   atmosphereEdge: THREE.Vector3
   atmosphereDayBoost: number
+  /** Multiplier on atmosphere shell alpha — Explorer reads more “magical.” */
+  atmosphereGlowMul: number
   lights: GlobeVisualLights
   cloudOpacity: number
   cloudDriftMul: number
@@ -28,10 +30,18 @@ export type GlobeVisualSnapshot = {
   orbitDamping: number
   orbitRotate: number
   autoRotateSpeed: number
+  /** Legacy linear lerp (unused if damp path active). */
   cameraLerpFactor: number
+  /** Exponential damp λ toward focus targets — lower = silkier glide. */
+  cameraDampLambda: number
   earthExplorerBlend: number
   poiDim: THREE.Color
   poiBright: THREE.Color
+  /** Explorer multicolor skydome (lerped in shader from Atlas flat void). */
+  skyHorizon: THREE.Color
+  skyBand: THREE.Color
+  skyZenith: THREE.Color
+  skyAccent: THREE.Color
 }
 
 const _ca = new THREE.Color()
@@ -53,11 +63,11 @@ const ATLAS_LIGHTS: GlobeVisualLights = {
 }
 
 const EXPLORER_LIGHTS: GlobeVisualLights = {
-  ambient: { intensity: 0.048, color: '#1e1e2e' },
-  key: { intensity: 1.12, color: '#fff4e8' },
-  fill: { intensity: 0.11, color: '#8a9cbd' },
-  hemi: { sky: '#4a5a78', ground: '#2c2438', intensity: 0.2 },
-  rim: { intensity: 0.065, color: '#5a4868' },
+  ambient: { intensity: 0.055, color: '#221828' },
+  key: { intensity: 1.22, color: '#fff6ec' },
+  fill: { intensity: 0.12, color: '#9aaed4' },
+  hemi: { sky: '#5a6a8a', ground: '#2e2438', intensity: 0.22 },
+  rim: { intensity: 0.092, color: '#7a6898' },
 }
 
 function mixColor(a: string, b: string, t: number): string {
@@ -95,6 +105,7 @@ const _snapshot: GlobeVisualSnapshot = {
   atmosphereDeep: new THREE.Vector3(),
   atmosphereEdge: new THREE.Vector3(),
   atmosphereDayBoost: 1,
+  atmosphereGlowMul: 1,
   lights: ATLAS_LIGHTS,
   cloudOpacity: 0.42,
   cloudDriftMul: 1,
@@ -105,9 +116,14 @@ const _snapshot: GlobeVisualSnapshot = {
   orbitRotate: 0.42,
   autoRotateSpeed: 0.038,
   cameraLerpFactor: 0.025,
+  cameraDampLambda: 5.2,
   earthExplorerBlend: 0,
   poiDim: new THREE.Color('#b8b8b8'),
   poiBright: new THREE.Color('#ffffff'),
+  skyHorizon: new THREE.Color('#050810'),
+  skyBand: new THREE.Color('#0a1020'),
+  skyZenith: new THREE.Color('#04060c'),
+  skyAccent: new THREE.Color('#000000'),
 }
 
 /**
@@ -120,24 +136,31 @@ export function getGlobeVisualSnapshot(t: number): GlobeVisualSnapshot {
 
   _snapshot.atmosphereDeep.copy(_va.fromArray(ATLAS_DEEP).lerp(_vb.fromArray(EXPLORER_DEEP), u))
   _snapshot.atmosphereEdge.copy(_va.fromArray(ATLAS_EDGE).lerp(_vb.fromArray(EXPLORER_EDGE), u))
-  _snapshot.atmosphereDayBoost = 1 + 0.18 * u
+  _snapshot.atmosphereDayBoost = 1 + 0.24 * u
+  _snapshot.atmosphereGlowMul = 1 + 0.55 * u
 
   _snapshot.lights = lerpLights(ATLAS_LIGHTS, EXPLORER_LIGHTS, u)
 
-  _snapshot.cloudOpacity = 0.42 + (0.54 - 0.42) * u
+  _snapshot.cloudOpacity = 0.42 + (0.52 - 0.42) * u
   _snapshot.cloudDriftMul = 1 + 0.35 * u
-  _snapshot.starOpacity = 0.42 + (0.52 - 0.42) * u
-  _snapshot.starSize = 0.055 + (0.068 - 0.055) * u
-  _snapshot.starTint.copy(_ca.set('#ffffff').lerp(_cb.set('#ffeef5'), u))
+  _snapshot.starOpacity = 0.38 + (0.48 - 0.38) * u
+  _snapshot.starSize = 0.055 + (0.064 - 0.055) * u
+  _snapshot.starTint.copy(_ca.set('#ffffff').lerp(_cb.set('#ffeef8'), u))
 
-  _snapshot.orbitDamping = 0.048 + (0.056 - 0.048) * u
-  _snapshot.orbitRotate = 0.42 + (0.48 - 0.42) * u
-  _snapshot.autoRotateSpeed = 0.038 + (0.046 - 0.038) * u
-  _snapshot.cameraLerpFactor = 0.025 + (0.032 - 0.025) * u
+  _snapshot.orbitDamping = 0.048 + (0.058 - 0.048) * u
+  _snapshot.orbitRotate = 0.42 + (0.46 - 0.42) * u
+  _snapshot.autoRotateSpeed = 0.038 + (0.042 - 0.038) * u
+  _snapshot.cameraLerpFactor = 0.025 + (0.028 - 0.025) * u
+  _snapshot.cameraDampLambda = 5.2 + (2.15 - 5.2) * u
   _snapshot.earthExplorerBlend = u
 
   _snapshot.poiDim.copy(_ca.set('#b8b8b8').lerp(_cb.set('#c4b8c8'), u))
   _snapshot.poiBright.copy(_ca.set('#ffffff').lerp(_cb.set('#fff8f0'), u))
+
+  _snapshot.skyHorizon.copy(_ca.set('#060912').lerp(_cb.set('#1e1830'), u))
+  _snapshot.skyBand.copy(_ca.set('#0c1428').lerp(_cb.set('#4a5882'), u))
+  _snapshot.skyZenith.copy(_ca.set('#050810').lerp(_cb.set('#2a1a3a'), u))
+  _snapshot.skyAccent.copy(_ca.set('#000000').lerp(_cb.set('#9a78c8'), u))
 
   return _snapshot
 }

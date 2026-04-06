@@ -53,13 +53,15 @@ export const EarthAtlas = forwardRef<THREE.Mesh>(function EarthAtlas(_props, ref
         specularMap: { value: specularMap },
         sunDirection: { value: sunDir.clone() },
         uExplorerBlend: { value: 0 },
+        uTime: { value: 0 },
       },
     })
   }, [dayMap, topoMap, normalMap, nightLightsMap, specularMap, sunDir])
 
-  useFrame(() => {
+  useFrame(({ clock }) => {
     const ex = getGlobeVisualSnapshot(globeVisualBlendRef.current).earthExplorerBlend
     material.uniforms.uExplorerBlend.value = ex
+    material.uniforms.uTime.value = clock.elapsedTime
   })
 
   return (

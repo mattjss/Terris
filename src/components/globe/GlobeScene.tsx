@@ -38,6 +38,9 @@ import { GlobeVisualBlendDriver } from './GlobeVisualBlendDriver'
 import { GlobeOrbitVisualTuning } from './GlobeOrbitVisualTuning'
 import { globeVisualBlendRef } from '@/state/globeVisualBlendRef'
 import { getGlobeVisualSnapshot } from './globeVisualPresets'
+import { GlobeExplorerSky } from './GlobeExplorerSky'
+import { TravelCraft } from './TravelCraft'
+import { TerrisPortalRing } from './TerrisPortalRing'
 
 const _dir = new THREE.Vector3()
 const _globeCenter = new THREE.Vector3(
@@ -104,7 +107,7 @@ export function GlobeScene() {
     useTerrisStore.getState().exitPlaceDetail()
   }, [])
 
-  useFrame(() => {
+  useFrame((_, delta) => {
     const terris = useTerrisStore.getState()
     if (terris.globeFocusRequestId !== prevGlobeFocusId.current) {
       prevGlobeFocusId.current = terris.globeFocusRequestId
@@ -138,11 +141,13 @@ export function GlobeScene() {
 
     const exploreSuspended = useExploreScaleStore.getState().controlsSuspended
     if (!exploreSuspended && targetPos.current) {
-      const factor = reducedMotion
-        ? 1
-        : getGlobeVisualSnapshot(globeVisualBlendRef.current).cameraLerpFactor
-      camera.position.lerp(targetPos.current, factor)
-      if (camera.position.distanceTo(targetPos.current) < 0.015) {
+      const tp = targetPos.current
+      const snap = getGlobeVisualSnapshot(globeVisualBlendRef.current)
+      const λ = reducedMotion ? 18 : snap.cameraDampLambda
+      camera.position.x = THREE.MathUtils.damp(camera.position.x, tp.x, λ, delta)
+      camera.position.y = THREE.MathUtils.damp(camera.position.y, tp.y, λ, delta)
+      camera.position.z = THREE.MathUtils.damp(camera.position.z, tp.z, λ, delta)
+      if (camera.position.distanceTo(tp) < 0.022) {
         targetPos.current = null
       }
     }
@@ -211,9 +216,13 @@ export function GlobeScene() {
       />
       <GlobeOrbitVisualTuning controlsRef={controlsRef} />
 
+      <TravelCraft />
+      <TerrisPortalRing />
+
       <GlobeLights />
 
       <group position={[0.1, -0.05, 0]} onPointerMissed={handlePointerMissed}>
+        <GlobeExplorerSky />
         <Suspense fallback={<EarthProcedural ref={earthMeshRef} />}>
           <EarthAtlas ref={earthMeshRef} />
           <CloudsLayer />

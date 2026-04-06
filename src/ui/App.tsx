@@ -26,6 +26,8 @@ import { hydrateGlobeVisualBlendRef } from '@/state/globeVisualModeStore'
 import { useGlobeVisualModeStore } from '@/state/globeVisualModeStore'
 import { LearningJournalSync } from '@/ui/LearningJournalSync'
 import { GlobeModeSwitcher } from '@/ui/GlobeModeSwitcher'
+import { JourneyPhaseDriver } from '@/journey/JourneyPhaseDriver'
+import { useJourneyPhaseStore } from '@/state/useJourneyPhaseStore'
 import './styles.css'
 
 function jumpYearForEntity(entity: TerrisEntity): number {
@@ -57,12 +59,15 @@ function AtlasShell() {
   const setYear = useTerrisStore((s) => s.setYear)
   const setSearchOpen = useTerrisStore((s) => s.setSearchOpen)
   const selectedEntity = useTerrisStore((s) => s.selectedEntity)
+  const journeyTargetEntity = useJourneyPhaseStore((s) => s.targetEntity)
+  const journeyPhase = useJourneyPhaseStore((s) => s.phase)
+  const enrichmentSource = selectedEntity ?? journeyTargetEntity
   const {
     entity: placeSheetEntity,
     enrichmentLoading,
     enrichmentError,
-  } = useEnrichedEntity(selectedEntity)
-  const enterPlaceDetail = useTerrisStore((s) => s.enterPlaceDetail)
+  } = useEnrichedEntity(enrichmentSource)
+  const beginJourneyToEntity = useTerrisStore((s) => s.beginJourneyToEntity)
   const uiMode = useTerrisStore((s) => s.uiMode)
   const exitPlaceDetail = useTerrisStore((s) => s.exitPlaceDetail)
   const requestGlobeFocus = useTerrisStore((s) => s.requestGlobeFocus)
@@ -79,14 +84,14 @@ function AtlasShell() {
       const fromCatalog = getMockEntityById(entityId)
       if (fromCatalog) {
         setExploreMode(fromCatalog.mode)
-        enterPlaceDetail(fromCatalog)
+        beginJourneyToEntity(fromCatalog)
         return
       }
       if (entityId.startsWith('Q')) {
         try {
           const live = await hydrateTerrisEntity(entityId)
           setExploreMode(live.mode)
-          enterPlaceDetail(live)
+          beginJourneyToEntity(live)
           return
         } catch {
           /* Wikidata/Wikipedia unavailable — fall through */
@@ -96,10 +101,10 @@ function AtlasShell() {
       if (poi) {
         const resolved = resolveTerrisEntityForPoi(poi)
         setExploreMode(resolved.mode)
-        enterPlaceDetail(resolved)
+        beginJourneyToEntity(resolved)
       }
     },
-    [enterPlaceDetail, setExploreMode],
+    [beginJourneyToEntity, setExploreMode],
   )
 
   useEffect(() => {
@@ -165,9 +170,17 @@ function AtlasShell() {
     exitPlaceDetail,
   ])
 
+  const journeyShellClass =
+    journeyPhase === 'travel' ||
+    journeyPhase === 'portal' ||
+    journeyPhase === 'arrival'
+      ? `terris-app--journey-${journeyPhase}`
+      : ''
+
   const appShellClass = [
     'terris-app',
     uiMode === 'place_detail' ? 'terris-app--place-detail' : '',
+    journeyShellClass,
     `terris-app--globe-visual-${globeVisualMode}`,
   ]
     .filter(Boolean)
@@ -180,6 +193,7 @@ function AtlasShell() {
     >
       <RouterSync />
       <LearningJournalSync />
+      <JourneyPhaseDriver />
 
       <div className="terris-canvas-layer" aria-hidden>
         <GlobeCanvas />
@@ -189,10 +203,6 @@ function AtlasShell() {
         <div className="terris-shell">
           <header className="terris-top-bar">
             <div className="terris-top-bar__left">
-              <div className="terris-brand-mark">
-                <span className="terris-brand-mark__name">Terris</span>
-                <span className="terris-brand-mark__tag">Atlas</span>
-              </div>
               <TerrisOptionsMenu />
             </div>
             <div className="terris-top-bar__right">
@@ -222,8 +232,9 @@ function AtlasShell() {
           </div>
 
           <div className="terris-placesheet-slot">
-            {selectedEntity ? (
+            {uiMode === 'place_detail' && selectedEntity ? (
               <div
+                key={selectedEntity.id}
                 className={
                   'terris-place-sheet-frame' +
                   (explorePhase.shouldDismissEarthPlaceSheet

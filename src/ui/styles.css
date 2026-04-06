@@ -96,6 +96,39 @@
 .terris-app--place-detail {
 }
 
+/* Journey legs — reduce chrome during travel / portal / arrival (study restores full UI). */
+.terris-app--journey-travel .terris-top-bar,
+.terris-app--journey-portal .terris-top-bar,
+.terris-app--journey-arrival .terris-top-bar {
+  opacity: 0.2;
+  pointer-events: none;
+  transition: opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.terris-app--journey-travel .terris-search-float,
+.terris-app--journey-portal .terris-search-float,
+.terris-app--journey-arrival .terris-search-float {
+  opacity: 0.15;
+  pointer-events: none;
+  transition: opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.terris-app--journey-travel .terris-layerdock-slot,
+.terris-app--journey-portal .terris-layerdock-slot,
+.terris-app--journey-arrival .terris-layerdock-slot {
+  opacity: 0.12;
+  pointer-events: none;
+  transition: opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.terris-app--journey-travel .terris-bottom-rail,
+.terris-app--journey-portal .terris-bottom-rail,
+.terris-app--journey-arrival .terris-bottom-rail {
+  opacity: 0.18;
+  pointer-events: none;
+  transition: opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 .terris-canvas-layer {
   position: absolute;
   inset: 0;
@@ -2843,24 +2876,26 @@ aside.terris-entity-panel {
 
 /* ─── Time minimap ─────────────────────────────────────────────── */
 
-/* Shell: primary = narrow; expands on hover / focus-within / drag / pin. */
+/* Shell: collapsed = tiny strip; opens on click (or while dragging scrubber). */
 .terris-time-minimap-shell {
   pointer-events: auto;
-  width: min(260px, calc(100vw - 48px));
-  max-width: 100%;
-  min-width: 0;
   margin: 0 auto;
+  min-width: 0;
   transform-origin: 50% 100%;
   transition:
-    width 0.32s cubic-bezier(0.22, 1, 0.36, 1),
-    max-width 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+    width 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    max-width 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.terris-time-minimap-shell--expanded {
-  width: 100%;
-  max-width: min(780px, calc(100vw - 32px));
-  /* Tall expanded panel + app overflow:hidden — scroll instead of clipping. */
-  max-height: min(65vh, calc(100vh - 96px));
+.terris-time-minimap-shell--collapsed {
+  width: min(168px, calc(100vw - 40px));
+  max-width: 100%;
+}
+
+.terris-time-minimap-shell--open {
+  width: min(380px, calc(100vw - 28px));
+  max-width: 100%;
+  max-height: min(52vh, 420px);
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -2870,7 +2905,7 @@ aside.terris-entity-panel {
   pointer-events: auto;
   width: 100%;
   box-sizing: border-box;
-  padding: 16px 18px 14px;
+  padding: 12px 12px 11px;
   background: linear-gradient(
     165deg,
     rgba(22, 24, 34, 0.88) 0%,
@@ -2879,14 +2914,14 @@ aside.terris-entity-panel {
   backdrop-filter: var(--terris-blur);
   -webkit-backdrop-filter: var(--terris-blur);
   border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 16px;
+  border-radius: 14px;
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.06) inset,
-    0 8px 32px rgba(0, 0, 0, 0.45);
+    0 6px 24px rgba(0, 0, 0, 0.4);
   transition:
-    padding 0.28s cubic-bezier(0.22, 1, 0.36, 1),
-    border-radius 0.28s ease,
-    box-shadow 0.28s ease;
+    padding 0.26s cubic-bezier(0.22, 1, 0.36, 1),
+    border-radius 0.26s ease,
+    box-shadow 0.26s ease;
 }
 
 .terris-app--globe-visual-explorer .terris-time-minimap {
@@ -2899,44 +2934,41 @@ aside.terris-entity-panel {
 }
 
 .terris-time-minimap--compact {
-  padding: 8px 10px 9px;
-  border-radius: 14px;
+  padding: 5px 7px 6px;
+  border-radius: 11px;
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.05) inset,
-    0 4px 20px rgba(0, 0, 0, 0.32);
+    0 3px 14px rgba(0, 0, 0, 0.32);
 }
 
 .terris-time-minimap--compact .terris-time-minimap__header {
-  margin-bottom: 6px;
-  gap: 6px 8px;
+  margin-bottom: 4px;
+  gap: 4px 5px;
 }
 
 .terris-time-minimap--compact .terris-time-minimap__eyebrow {
-  font-size: 8px;
+  font-size: 7px;
+  letter-spacing: 0.16em;
 }
 
 .terris-time-minimap--compact .terris-time-minimap__readout-wrap {
-  padding: 4px 10px;
+  padding: 2px 6px;
 }
 
 .terris-time-minimap--compact .terris-time-minimap__readout {
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .terris-time-minimap--compact .terris-time-minimap__context {
-  max-width: 72px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 8px;
+  display: none;
 }
 
 .terris-time-minimap--compact .terris-time-minimap__rail {
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .terris-time-minimap--compact .terris-time-minimap__rail-inner {
-  height: 4px;
+  height: 3px;
 }
 
 .terris-time-minimap--compact .terris-time-minimap__hint {
@@ -2944,36 +2976,40 @@ aside.terris-entity-panel {
 }
 
 .terris-time-minimap--compact .terris-time-minimap__track {
-  height: 28px;
+  height: 22px;
 }
 
 .terris-time-minimap--compact .terris-time-minimap__playhead-line {
-  top: 3px;
-  bottom: 3px;
+  top: 2px;
+  bottom: 2px;
 }
 
 .terris-time-minimap--compact .terris-time-minimap__playhead-knob {
-  width: 11px;
-  height: 11px;
-  margin-left: -5.5px;
+  width: 9px;
+  height: 9px;
+  margin-left: -4.5px;
   top: -1px;
 }
 
-.terris-time-minimap--compact .terris-time-minimap__labels {
-  display: none;
+.terris-time-minimap--compact .terris-time-minimap__back {
+  padding: 2px 5px;
+  font-size: 10px;
 }
 
-.terris-time-minimap--compact .terris-time-minimap__back {
-  padding: 4px 8px;
-  font-size: 11px;
+.terris-time-minimap--expanded {
+  padding: 11px 12px 10px;
+}
+
+.terris-time-minimap--expanded .terris-time-minimap__header {
+  margin-bottom: 8px;
 }
 
 .terris-time-minimap__header {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, auto) auto minmax(0, 1fr);
   align-items: center;
-  gap: 10px 12px;
-  margin-bottom: 12px;
+  gap: 6px 8px;
+  margin-bottom: 10px;
   min-width: 0;
   width: 100%;
 }
@@ -2987,21 +3023,19 @@ aside.terris-entity-panel {
   justify-self: end;
 }
 
-.terris-time-minimap__pin {
+.terris-time-minimap__toggle {
   flex-shrink: 0;
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   margin: 0;
   padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 9px;
+  border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.05);
-  color: rgba(220, 226, 240, 0.85);
-  font-size: 11px;
-  line-height: 1;
+  color: rgba(220, 226, 240, 0.88);
   cursor: pointer;
   transition:
     background 0.18s ease,
@@ -3009,21 +3043,31 @@ aside.terris-entity-panel {
     color 0.18s ease;
 }
 
-.terris-time-minimap__pin:hover {
+.terris-time-minimap__toggle:hover {
   background: rgba(255, 255, 255, 0.09);
   border-color: rgba(255, 255, 255, 0.16);
   color: var(--terris-fg);
 }
 
-.terris-time-minimap__pin:focus-visible {
+.terris-time-minimap__toggle:focus-visible {
   outline: 2px solid var(--terris-focus-ring);
   outline-offset: var(--terris-focus-ring-offset);
 }
 
-.terris-time-minimap--compact .terris-time-minimap__pin {
-  width: 26px;
-  height: 26px;
+.terris-time-minimap__toggle-icon {
   font-size: 10px;
+  line-height: 1;
+  margin-left: 1px;
+}
+
+.terris-time-minimap--compact .terris-time-minimap__toggle {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+}
+
+.terris-time-minimap--compact .terris-time-minimap__toggle-icon {
+  font-size: 9px;
 }
 
 .terris-time-minimap__header-left {
@@ -3096,13 +3140,17 @@ aside.terris-entity-panel {
 }
 
 .terris-time-minimap__context {
-  font-family: var(--terris-font-mono);
-  font-size: var(--terris-text-label);
-  font-weight: 600;
-  letter-spacing: var(--terris-track-mono);
-  text-transform: uppercase;
+  font-family: var(--terris-font-sans);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: none;
   color: var(--terris-fg-muted);
-  line-height: 1.35;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .terris-time-minimap__context-mark {
@@ -3112,17 +3160,17 @@ aside.terris-entity-panel {
 }
 
 .terris-time-minimap__hint {
-  margin: 0 0 12px;
+  margin: 0 0 8px;
   font-family: var(--terris-font-sans);
-  font-size: var(--terris-text-caption);
+  font-size: 10px;
   font-weight: 400;
-  letter-spacing: 0.01em;
-  line-height: 1.5;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
   color: var(--terris-fg-dim);
 }
 
 .terris-time-minimap__rail {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .terris-time-minimap__rail-inner {
@@ -3279,26 +3327,38 @@ aside.terris-entity-panel {
   transform: scale(1.08);
 }
 
-.terris-time-minimap__labels {
-  position: relative;
-  height: 20px;
-  margin-top: 10px;
-  font-family: var(--terris-font-mono);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--terris-fg-dim);
+/* Proportional row — no overlapping “Early Modern” / “Modern” stacks. */
+.terris-time-minimap__labels-row {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  margin-top: 6px;
+  padding-top: 5px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  box-sizing: border-box;
+  min-height: 0;
 }
 
-.terris-time-minimap__label {
-  position: absolute;
-  transform: translateX(-50%);
-  white-space: nowrap;
-  max-width: 18%;
+.terris-time-minimap__label-cell {
+  flex: 0 0 auto;
+  min-width: 0;
+  padding: 0 1px;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.terris-time-minimap__label-text {
+  display: block;
+  font-family: var(--terris-font-mono);
+  font-size: 7px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--terris-fg-dim);
+  line-height: 1.2;
   overflow: hidden;
   text-overflow: ellipsis;
-  text-align: center;
+  white-space: nowrap;
 }
 
 /* ─── Historical reference search ────────────────────────────── */
@@ -3446,13 +3506,31 @@ aside.terris-entity-panel {
 }
 
 .terris-place-sheet-frame .terris-place-sheet {
+  animation: terris-place-sheet-arrive 0.72s cubic-bezier(0.22, 1, 0.36, 1) both;
   transition:
     opacity 420ms cubic-bezier(0.22, 1, 0.36, 1),
     transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
     filter 420ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+@keyframes terris-place-sheet-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.988);
+    filter: blur(6px);
+  }
+  55% {
+    filter: blur(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
 .terris-place-sheet-frame--dismissing .terris-place-sheet {
+  animation: none;
   opacity: 0;
   transform: translateX(12px) scale(0.985);
   filter: blur(3px);

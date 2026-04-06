@@ -11,6 +11,7 @@ import {
 import { useExploreScaleStore } from '@/state/exploreScaleStore'
 import { globeVisualBlendRef } from '@/state/globeVisualBlendRef'
 import { useTerrisStore } from '@/state/useTerrisStore'
+import { useJourneyPhaseStore } from '@/state/useJourneyPhaseStore'
 import { getGlobeVisualSnapshot } from '@/components/globe/globeVisualPresets'
 import { resolveTerrisEntityForPoi } from '@/ui/terrisPoiToTerrisEntity'
 
@@ -29,11 +30,13 @@ function PoiMarker({ entity }: { entity: TerrisPoi }) {
   const year = useTerrisStore((s) => s.year)
   const selectedEntity = useTerrisStore((s) => s.selectedEntity)
   const uiMode = useTerrisStore((s) => s.uiMode)
-  const enterPlaceDetail = useTerrisStore((s) => s.enterPlaceDetail)
+  const beginJourneyToEntity = useTerrisStore((s) => s.beginJourneyToEntity)
   const exitPlaceDetail = useTerrisStore((s) => s.exitPlaceDetail)
+  const journeyTarget = useJourneyPhaseStore((s) => s.targetEntity)
 
   const visible = isTerrisPoiVisibleAtYear(entity, year)
-  const isSelected = selectedEntity?.id === entity.id
+  const isSelected =
+    selectedEntity?.id === entity.id || journeyTarget?.id === entity.id
   const emphasize = hovered || isSelected
 
   const position = useMemo(
@@ -54,13 +57,13 @@ function PoiMarker({ entity }: { entity: TerrisPoi }) {
   const handleClick = useCallback(
     (e: { stopPropagation: () => void }) => {
       e.stopPropagation()
-      if (isSelected && uiMode === 'place_detail') {
+      if (selectedEntity?.id === entity.id && uiMode === 'place_detail') {
         exitPlaceDetail()
         return
       }
-      enterPlaceDetail(resolveTerrisEntityForPoi(entity))
+      beginJourneyToEntity(resolveTerrisEntityForPoi(entity))
     },
-    [entity, isSelected, uiMode, enterPlaceDetail, exitPlaceDetail],
+    [entity, selectedEntity?.id, uiMode, beginJourneyToEntity, exitPlaceDetail],
   )
 
   const handleOver = useCallback((e: { stopPropagation: () => void }) => {
@@ -81,7 +84,11 @@ function PoiMarker({ entity }: { entity: TerrisPoi }) {
     const snap = getGlobeVisualSnapshot(globeVisualBlendRef.current)
     _colorDim.copy(snap.poiDim)
     _colorBright.copy(snap.poiBright)
-    const targetScale = emphasize ? 1.2 : 1
+    const targetScale = emphasize
+      ? isSelected && snap.earthExplorerBlend > 0.35
+        ? 1.48
+        : 1.2
+      : 1
     const s = dot.scale.x
     dot.scale.setScalar(s + (targetScale - s) * 0.18)
     mat.color.lerp(emphasize ? _colorBright : _colorDim, 0.14)
