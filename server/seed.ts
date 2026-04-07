@@ -4,6 +4,7 @@ import { db, pg } from './db/index.js'
 import { entitiesTable } from './db/schema.js'
 import { sql as drizzleSql } from 'drizzle-orm'
 import OpenAI from 'openai'
+import { TERRIS_EMBEDDING_MODEL } from './ai/constants.js'
 
 async function main() {
   await db.execute(drizzleSql.raw('CREATE EXTENSION IF NOT EXISTS vector'))
@@ -30,7 +31,7 @@ async function main() {
     for (const e of entities) {
       const text = `${e.name}. ${e.description}\n${e.details?.map((d) => `${d.label}: ${d.value}`).join('\n') ?? ''}`
       const res = await openai.embeddings.create({
-        model: 'text-embedding-3-small',
+        model: TERRIS_EMBEDDING_MODEL,
         input: text.slice(0, 8000),
       })
       const embedding = res.data[0]?.embedding

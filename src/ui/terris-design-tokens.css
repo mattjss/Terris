@@ -1,10 +1,8 @@
 /**
- * Terris — warm educational design system
+ * Terris — technical UI (Nothing-adjacent)
  *
- * Goals: welcoming, trustworthy, readable for kids through adults; premium but not flashy.
- * Geist Sans for UI and reading; Geist Mono for metadata, coordinates, years, and system labels.
- *
- * Contrast: primary text on surfaces targets ≥ 4.5:1; large titles ≥ 3:1. Muted text kept ≥ 4.5:1 on panels.
+ * Sharp geometry, monospace typography, flat surfaces — no pills or frosted glass.
+ * Geist Mono for all UI copy; contrast targets unchanged.
  */
 
 :root {
@@ -18,7 +16,7 @@
   --terris-space-7: 2rem; /* 32px */
   --terris-space-8: 2.5rem; /* 40px */
 
-  /* ─── Typography — hierarchy (Geist Sans unless noted) ─── */
+  /* ─── Typography — hierarchy (mono throughout) ─── */
   --terris-text-kicker: 0.625rem; /* 10px — mono section eyerows */
   --terris-text-label: 0.6875rem; /* 11px */
   --terris-text-caption: 0.8125rem; /* 13px */
@@ -34,7 +32,7 @@
   --terris-text-brand: var(--terris-text-body);
   --terris-text-brand-tag: var(--terris-text-label);
   --terris-text-search-placeholder: var(--terris-text-body);
-  --terris-text-panel-title: var(--terris-text-title-lg);
+  --terris-text-panel-title: clamp(1.375rem, 2.8vw, 1.625rem);
   --terris-text-summary: var(--terris-text-subtitle);
   --terris-text-body-reading: var(--terris-text-body);
   --terris-text-meta: var(--terris-text-caption);
@@ -48,31 +46,31 @@
   --terris-track-wide: 0.06em;
   --terris-track-mono: 0.12em;
 
-  --terris-font-sans: 'Geist', 'Geist Fallback', ui-sans-serif, system-ui, sans-serif;
+  --terris-font-sans: 'Geist Mono', ui-monospace, monospace;
   --terris-font-mono: 'Geist Mono', ui-monospace, monospace;
 
-  /* ─── Canvas / shell — deep navy, never #000 ─── */
-  --terris-bg-deep: #0c1219;
-  --terris-bg: #141d28;
+  /* ─── Canvas / shell — deep cool navy + subtle teal (never flat #000) ─── */
+  --terris-bg-deep: #0a1118;
+  --terris-bg: #121b26;
   --terris-bg-elevated: rgba(26, 36, 48, 0.92);
 
   /* Panels — warm slate, soft elevation */
   --terris-surface: rgba(30, 40, 52, 0.6);
   --terris-surface-strong: rgba(38, 50, 64, 0.85);
-  --terris-surface-elevated: rgba(28, 38, 50, 0.94);
+  --terris-surface-elevated: rgba(24, 34, 46, 0.97);
   --terris-surface-warm: rgba(34, 42, 52, 0.78);
   --terris-surface-raised: rgba(42, 54, 68, 0.55);
 
   /* Glass overlays */
   --terris-glass-tint: rgba(24, 34, 46, 0.75);
   --terris-glass-tint-soft: rgba(22, 32, 44, 0.58);
-  --terris-glass-border: rgba(255, 248, 240, 0.1);
-  --terris-glass-highlight: rgba(255, 252, 245, 0.05);
+  --terris-glass-border: rgba(255, 248, 240, 0.11);
+  --terris-glass-highlight: rgba(255, 252, 245, 0.07);
 
   /* ─── Text — off-white primary; muted secondary (readable on dark) ─── */
-  --terris-fg: rgba(245, 246, 242, 0.97);
-  --terris-fg-muted: rgba(186, 198, 214, 0.92);
-  --terris-fg-dim: rgba(145, 158, 176, 0.88);
+  --terris-fg: rgba(248, 250, 252, 0.98);
+  --terris-fg-muted: rgba(195, 206, 220, 0.94);
+  --terris-fg-dim: rgba(155, 168, 188, 0.9);
   --terris-fg-subtle: rgba(165, 176, 192, 0.9);
   --terris-fg-on-accent: rgba(16, 22, 26, 0.95);
   --terris-fg-on-state: rgba(12, 18, 22, 0.95);
@@ -114,22 +112,29 @@
   --terris-interactive-active-bg: rgba(255, 252, 245, 0.1);
   --terris-interactive-pressed-scale: 0.98;
 
-  /* ─── Shadows — soft depth ─── */
-  --terris-shadow-sm: 0 1px 2px rgba(6, 10, 16, 0.22);
-  --terris-shadow-md: 0 10px 28px rgba(6, 12, 20, 0.3);
-  --terris-shadow-lg: 0 22px 48px rgba(4, 10, 18, 0.4);
-  --terris-shadow-sheet: 0 1px 1px rgba(8, 12, 18, 0.1), 0 24px 52px rgba(6, 10, 18, 0.36);
+  /* ─── Shadows — hairline / flat (no soft blobs) ─── */
+  --terris-shadow-sm: 0 1px 0 rgba(255, 252, 248, 0.06);
+  --terris-shadow-md: 0 1px 0 rgba(255, 252, 248, 0.08);
+  --terris-shadow-lg: 0 2px 12px rgba(0, 0, 0, 0.35);
+  --terris-shadow-sheet:
+    0 1px 0 rgba(255, 252, 248, 0.05) inset,
+    0 2px 16px rgba(0, 0, 0, 0.32);
 
-  --terris-blur: blur(22px) saturate(128%);
+  /** No backdrop frosted glass */
+  --terris-blur: none;
 
-  /* ─── Radius ─── */
-  --terris-radius-sm: 8px;
-  --terris-radius-md: 12px;
-  --terris-radius-lg: 14px;
-  --terris-radius-search: 18px;
-  --terris-radius-pill: 24px;
-  --terris-radius-sheet: 22px;
-  --terris-radius-full: 999px;
+  /* ─── Radius — sharp corners ─── */
+  --terris-radius-sm: 0;
+  --terris-radius-md: 0;
+  --terris-radius-lg: 0;
+  --terris-radius-search: 0;
+  --terris-radius-pill: 0;
+  --terris-radius-sheet: 0;
+  --terris-radius-chrome: 0;
+  --terris-radius-full: 0;
+
+  /** Accent edge — only on primary sheets (place, command palette), not every chip */
+  --terris-ui-accent-spine: 2px solid color-mix(in srgb, var(--terris-accent) 55%, transparent);
 
   /* ─── Dividers ─── */
   --terris-divider: linear-gradient(
@@ -139,9 +144,47 @@
     transparent
   );
 
-  /* Touch / pointer — minimum tap targets */
-  --terris-tap-min: 44px;
-  --terris-tap-comfortable: 48px;
+  /* ─── Component sizing ─── */
+  --terris-tap-min: 36px;
+  --terris-tap-comfortable: 40px;
+
+  /* Buttons: consistent padding across all controls */
+  --terris-btn-padding-y: var(--terris-space-2);     /* 8px */
+  --terris-btn-padding-x: var(--terris-space-3);     /* 12px */
+  --terris-btn-padding-x-lg: var(--terris-space-4);  /* 16px */
+  --terris-btn-font: var(--terris-text-label);        /* 11px */
+  --terris-btn-font-lg: var(--terris-text-caption);   /* 13px */
+
+  /* Inputs / selects */
+  --terris-input-min-h: 32px;
+  --terris-input-padding: var(--terris-space-2) var(--terris-space-3);
+
+  /* Panel / dialog insets */
+  --terris-panel-inset: var(--terris-space-5);        /* 20px */
+  --terris-panel-inset-sm: var(--terris-space-4);     /* 16px */
+  --terris-panel-gap: var(--terris-space-4);          /* 16px — between sections */
+  --terris-panel-gap-sm: var(--terris-space-3);       /* 12px — within sections */
+
+  /* Kicker / eyebrow (system label) */
+  --terris-kicker-size: var(--terris-text-kicker);    /* 10px */
+  --terris-kicker-weight: 600;
+  --terris-kicker-tracking: 0.1em;
+
+  /* Chrome controls (top bar, bottom rail) */
+  --terris-chrome-inset: max(var(--terris-space-4), env(safe-area-inset-top, 0px));
+  --terris-chrome-gap: var(--terris-space-3);         /* 12px */
+
+  /**
+   * Single centered column for search + bottom time rail so edges line up
+   * (was 560px top vs 720px bottom — looked visibly misaligned).
+   */
+  --terris-chrome-column-width: min(560px, calc(100vw - 32px));
+
+  /**
+   * Bottom time minimap + planetary shell share this cap so the timeline
+   * does not inherit the full search column width (felt huge on desktop).
+   */
+  --terris-time-rail-max-width: min(296px, calc(100vw - 20px));
 
   /* ─── Motion — one calm family (premium, not flashy) ─── */
   --terris-motion-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
@@ -176,13 +219,13 @@
  * Atlas uses :root defaults; `.terris-app` always has `--globe-visual-atlas` or `explorer`.
  */
 .terris-app--globe-visual-explorer {
-  --terris-bg-deep: #12101c;
-  --terris-bg: #181a28;
+  --terris-bg-deep: #100e18;
+  --terris-bg: #171528;
   --terris-bg-elevated: rgba(32, 30, 46, 0.92);
 
   --terris-surface: rgba(36, 34, 50, 0.62);
   --terris-surface-strong: rgba(46, 44, 62, 0.88);
-  --terris-surface-elevated: rgba(36, 36, 50, 0.94);
+  --terris-surface-elevated: rgba(32, 32, 46, 0.97);
   --terris-surface-warm: rgba(42, 38, 54, 0.78);
   --terris-surface-raised: rgba(48, 44, 62, 0.55);
 
@@ -208,6 +251,10 @@
   --terris-chip-floating-bg: rgba(26, 24, 38, 0.58);
   --terris-chip-floating-border: rgba(255, 220, 200, 0.11);
 
-  --terris-shadow-md: 0 10px 28px rgba(8, 6, 20, 0.34);
-  --terris-shadow-lg: 0 22px 48px rgba(6, 4, 18, 0.42);
+  --terris-shadow-md: 0 1px 0 rgba(255, 245, 240, 0.07);
+  --terris-shadow-lg: 0 2px 12px rgba(6, 4, 20, 0.38);
+  --terris-shadow-sheet:
+    0 1px 0 rgba(255, 245, 240, 0.04) inset,
+    0 2px 16px rgba(0, 0, 0, 0.34);
+  --terris-ui-accent-spine: 2px solid color-mix(in srgb, #a894c8 65%, var(--terris-accent) 35%);
 }

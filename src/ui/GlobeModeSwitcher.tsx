@@ -1,8 +1,25 @@
 import { useGlobeVisualModeStore } from '@/state/globeVisualModeStore'
+import type { GlobeVisualMode } from '@/state/globeVisualModeStore'
 import { useTerrisStore } from '@/state/useTerrisStore'
 
+const GLOBE_STYLE: Record<
+  GlobeVisualMode,
+  { label: string; description: string }
+> = {
+  atlas: {
+    label: 'Reference',
+    description:
+      'Neutral documentary lighting on the globe — best for timelines, sources, and focused reading.',
+  },
+  explorer: {
+    label: 'Illustrated',
+    description:
+      'Softer, warmer globe lighting and sky — easier browsing and a more inviting first visit.',
+  },
+}
+
 export type GlobeModeSwitcherProps = {
-  /** Compact: toggle only — full hint lives in Options for a calmer main screen. */
+  /** Compact: toggle only — tooltips carry the full hint on hover/long-press. */
   variant?: 'default' | 'compact'
   className?: string
 }
@@ -24,17 +41,17 @@ export function GlobeModeSwitcher({
     .join(' ')
 
   return (
-    <div className={rootClass} role="group" aria-label="Globe appearance">
+    <div className={rootClass} role="group" aria-label="Globe lighting style">
       {variant === 'default' ? (
         <div className="terris-globe-mode__header">
           <span className="terris-globe-mode__eyebrow">Globe</span>
-          <span className="terris-globe-mode__title">Look</span>
+          <span className="terris-globe-mode__title">Lighting</span>
         </div>
       ) : null}
       <div
         className="terris-globe-mode__toggle"
         role="radiogroup"
-        aria-label="Choose globe look"
+        aria-label="Reference or illustrated globe lighting"
         aria-describedby={
           variant === 'default' ? 'terris-globe-mode-hint' : undefined
         }
@@ -43,6 +60,8 @@ export function GlobeModeSwitcher({
           type="button"
           role="radio"
           aria-checked={mode === 'atlas'}
+          aria-label={`${GLOBE_STYLE.atlas.label}: ${GLOBE_STYLE.atlas.description}`}
+          title={GLOBE_STYLE.atlas.description}
           className={
             'terris-globe-mode__btn' + (mode === 'atlas' ? ' terris-globe-mode__btn--active' : '')
           }
@@ -51,12 +70,14 @@ export function GlobeModeSwitcher({
             setMode('atlas')
           }}
         >
-          Atlas
+          {GLOBE_STYLE.atlas.label}
         </button>
         <button
           type="button"
           role="radio"
           aria-checked={mode === 'explorer'}
+          aria-label={`${GLOBE_STYLE.explorer.label}: ${GLOBE_STYLE.explorer.description}`}
+          title={GLOBE_STYLE.explorer.description}
           className={
             'terris-globe-mode__btn' +
             (mode === 'explorer' ? ' terris-globe-mode__btn--active' : '')
@@ -66,14 +87,12 @@ export function GlobeModeSwitcher({
             setMode('explorer')
           }}
         >
-          Explorer
+          {GLOBE_STYLE.explorer.label}
         </button>
       </div>
       {variant === 'default' ? (
         <p className="terris-globe-mode__hint" id="terris-globe-mode-hint" role="note">
-          {mode === 'atlas'
-            ? 'Grounded documentary lighting — best for timelines, sources, and reference.'
-            : 'Softer, warmer illustration — inviting for tours, families, and first visits.'}
+          {GLOBE_STYLE[mode].description}
         </p>
       ) : null}
     </div>

@@ -53,7 +53,10 @@ export const useTerrisStore = create<{
   placeDetailTransitionPhase: PlaceDetailTransitionPhase
   /** Enter focused entity sheet; Earth hubs request globe focus when coords exist. */
   enterPlaceDetail: (entity: TerrisEntity) => void
-  /** Browse → travel → portal → arrival → study (search / POI / related). */
+  /**
+   * Optional delayed “journey” into place detail (travel → portal → arrival).
+   * Primary flows use `enterPlaceDetail` so the educational sheet appears immediately.
+   */
   beginJourneyToEntity: (entity: TerrisEntity) => void
   /** Leave place detail and return to globe exploration. */
   exitPlaceDetail: () => void

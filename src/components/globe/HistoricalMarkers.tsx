@@ -8,27 +8,22 @@ import {
   GLOBE_RADIUS,
 } from '@/data/historical'
 import { useExploreScaleStore } from '@/state/exploreScaleStore'
-import { globeVisualBlendRef } from '@/state/globeVisualBlendRef'
 import { useAtlasStore, useVisibleEntities } from '@/store/atlas'
-import { getGlobeVisualSnapshot } from '@/components/globe/globeVisualPresets'
 
 const _camDir = new THREE.Vector3()
 const _markerDir = new THREE.Vector3()
 const _markerTint = new THREE.Color()
-const _markerWarm = new THREE.Color('#e8d4c4')
-
 const TYPE_SCALE: Record<string, number> = {
   place: 1,
-  empire: 1.4,
-  architecture: 1.1,
-  battle: 1.2,
+  empire: 1.2,
+  architecture: 1,
+  battle: 1.1,
 }
 
-function Marker({ entity, index }: { entity: HistoricalEntity; index: number }) {
+function Marker({ entity }: { entity: HistoricalEntity }) {
   const groupRef = useRef<THREE.Group>(null)
   const ringRef = useRef<THREE.Mesh>(null)
   const dotRef = useRef<THREE.Mesh>(null)
-  const glowRef = useRef<THREE.Mesh>(null)
   const selectedRingRef = useRef<THREE.Mesh>(null)
   const [markerVisible, setMarkerVisible] = useState(true)
   const prevFacingRef = useRef<boolean | null>(null)
@@ -36,7 +31,6 @@ function Marker({ entity, index }: { entity: HistoricalEntity; index: number }) 
   const labelOpacity = useExploreScaleStore((s) => s.earthCityLabelsOpacity)
   const selectedId = useAtlasStore((s) => s.selectedId)
   const hoveredId = useAtlasStore((s) => s.hoveredId)
-  const reducedMotion = useAtlasStore((s) => s.reducedMotion)
 
   const position = useMemo(
     () => new THREE.Vector3(...latLngToVec3(entity.lat, entity.lng, GLOBE_RADIUS)),
@@ -76,7 +70,7 @@ function Marker({ entity, index }: { entity: HistoricalEntity; index: number }) 
     document.body.style.cursor = ''
   }, [])
 
-  useFrame(({ camera, clock }) => {
+  useFrame(({ camera }) => {
     if (!groupRef.current) return
 
     _camDir.copy(camera.position).normalize()
@@ -88,42 +82,23 @@ function Marker({ entity, index }: { entity: HistoricalEntity; index: number }) 
       setMarkerVisible(facing)
     }
 
-    const ex = getGlobeVisualSnapshot(globeVisualBlendRef.current).earthExplorerBlend
-    _markerTint.set(entity.color).lerp(_markerWarm, ex * 0.14)
+    _markerTint.set(entity.color)
 
     if (dotRef.current) {
-      const target = isHovered || isSelected ? 1.6 : 1
+      const target = isHovered || isSelected ? 1.4 : 1
       const s = dotRef.current.scale.x
-      dotRef.current.scale.setScalar(s + (target - s) * 0.12)
+      dotRef.current.scale.setScalar(s + (target - s) * 0.15)
       const dotMat = dotRef.current.material as THREE.MeshBasicMaterial
       dotMat.color.copy(_markerTint)
     }
 
-    if (glowRef.current) {
-      const target = isHovered || isSelected ? 0.15 : 0.06
-      const mat = glowRef.current.material as THREE.MeshBasicMaterial
-      mat.opacity += (target - mat.opacity) * 0.1
-      mat.color.copy(_markerTint)
-    }
-
     if (ringRef.current) {
       ;(ringRef.current.material as THREE.MeshBasicMaterial).color.copy(_markerTint)
+      ringRef.current.scale.setScalar(1)
     }
     if (selectedRingRef.current) {
       ;(selectedRingRef.current.material as THREE.MeshBasicMaterial).color.copy(_markerTint)
-    }
-
-    if (!reducedMotion) {
-      if (ringRef.current) {
-        const pulse = 1 + Math.sin(clock.elapsedTime * 1.8 + index * 1.7) * 0.2
-        ringRef.current.scale.setScalar(pulse)
-      }
-      if (selectedRingRef.current) {
-        const t = (clock.elapsedTime * 1.1 + index) % 1
-        selectedRingRef.current.scale.setScalar(1 + t * 1.5)
-        const mat = selectedRingRef.current.material as THREE.MeshBasicMaterial
-        mat.opacity = 0.35 * (1 - t)
-      }
+      selectedRingRef.current.scale.setScalar(1.1)
     }
   })
 
@@ -142,16 +117,6 @@ function Marker({ entity, index }: { entity: HistoricalEntity; index: number }) 
       <mesh ref={dotRef}>
         <sphereGeometry args={[0.012 * scale, 10, 10]} />
         <meshBasicMaterial />
-      </mesh>
-
-      <mesh ref={glowRef}>
-        <sphereGeometry args={[0.032 * scale, 10, 10]} />
-        <meshBasicMaterial
-          transparent
-          opacity={0.06}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-        />
       </mesh>
 
       <mesh ref={ringRef}>
@@ -187,20 +152,20 @@ function Marker({ entity, index }: { entity: HistoricalEntity; index: number }) 
         >
           <div
             style={{
-              background: 'rgba(6,8,14,0.88)',
-              backdropFilter: 'blur(16px)',
-              border: '1px solid rgba(255,255,255,0.06)',
-              borderRadius: '6px',
+              background: 'rgba(6,8,14,0.95)',
+              backdropFilter: 'none',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 0,
               padding: '4px 8px',
               whiteSpace: 'nowrap',
               transform: 'translateY(-22px)',
               animation: 'fadeIn 0.15s ease-out',
             }}
           >
-            <p style={{ fontSize: '11px', fontWeight: 500, color: 'rgba(255,255,255,0.85)', margin: 0, letterSpacing: '0.005em' }}>
+            <p style={{ fontSize: '10px', fontFamily: 'Geist Mono, monospace', fontWeight: 500, color: 'rgba(255,255,255,0.9)', margin: 0, letterSpacing: '0.04em', textTransform: 'uppercase' as const }}>
               {entity.name}
             </p>
-            <p style={{ fontSize: '9px', color: entity.color, margin: 0, marginTop: '1px', opacity: 0.7 }}>
+            <p style={{ fontSize: '9px', fontFamily: 'Geist Mono, monospace', color: entity.color, margin: 0, marginTop: '2px', opacity: 0.6, letterSpacing: '0.06em', textTransform: 'uppercase' as const }}>
               {entity.type === 'battle' ? 'Battle' : entity.type === 'empire' ? 'Empire' : entity.type === 'architecture' ? 'Landmark' : 'City'}
             </p>
           </div>
@@ -220,8 +185,8 @@ export function HistoricalMarkers() {
 
   return (
     <group>
-      {markerable.map((entity, i) => (
-        <Marker key={entity.id} entity={entity} index={i} />
+      {markerable.map((entity) => (
+        <Marker key={entity.id} entity={entity} />
       ))}
     </group>
   )

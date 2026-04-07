@@ -80,10 +80,10 @@ export function InfoPanel() {
         flex flex-col font-[family-name:var(--font-terris-mono)]
       "
       style={{
-        background: 'rgba(0,0,0,0.72)',
-        backdropFilter: 'blur(20px)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        boxShadow: '0 8px 48px rgba(0,0,0,0.55)',
+        background: 'rgba(0,0,0,0.92)',
+        backdropFilter: 'none',
+        border: '1px solid rgba(255,255,255,0.12)',
+        boxShadow: 'none',
       }}
     >
       <div className="flex-1 overflow-y-auto overscroll-contain p-4 flex flex-col gap-3">
@@ -210,7 +210,7 @@ export function InfoPanel() {
                   "
                 >
                   <span
-                    className="w-1 h-1 rounded-full"
+                    className="w-1 h-1 rounded-none"
                     style={{ background: getTypeColor(rel.type) }}
                   />
                   {rel.name}

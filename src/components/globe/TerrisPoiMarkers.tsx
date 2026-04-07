@@ -11,7 +11,6 @@ import {
 import { useExploreScaleStore } from '@/state/exploreScaleStore'
 import { globeVisualBlendRef } from '@/state/globeVisualBlendRef'
 import { useTerrisStore } from '@/state/useTerrisStore'
-import { useJourneyPhaseStore } from '@/state/useJourneyPhaseStore'
 import { getGlobeVisualSnapshot } from '@/components/globe/globeVisualPresets'
 import { resolveTerrisEntityForPoi } from '@/ui/terrisPoiToTerrisEntity'
 
@@ -30,13 +29,11 @@ function PoiMarker({ entity }: { entity: TerrisPoi }) {
   const year = useTerrisStore((s) => s.year)
   const selectedEntity = useTerrisStore((s) => s.selectedEntity)
   const uiMode = useTerrisStore((s) => s.uiMode)
-  const beginJourneyToEntity = useTerrisStore((s) => s.beginJourneyToEntity)
+  const enterPlaceDetail = useTerrisStore((s) => s.enterPlaceDetail)
   const exitPlaceDetail = useTerrisStore((s) => s.exitPlaceDetail)
-  const journeyTarget = useJourneyPhaseStore((s) => s.targetEntity)
 
   const visible = isTerrisPoiVisibleAtYear(entity, year)
-  const isSelected =
-    selectedEntity?.id === entity.id || journeyTarget?.id === entity.id
+  const isSelected = selectedEntity?.id === entity.id
   const emphasize = hovered || isSelected
 
   const position = useMemo(
@@ -61,9 +58,9 @@ function PoiMarker({ entity }: { entity: TerrisPoi }) {
         exitPlaceDetail()
         return
       }
-      beginJourneyToEntity(resolveTerrisEntityForPoi(entity))
+      enterPlaceDetail(resolveTerrisEntityForPoi(entity))
     },
-    [entity, selectedEntity?.id, uiMode, beginJourneyToEntity, exitPlaceDetail],
+    [entity, selectedEntity?.id, uiMode, enterPlaceDetail, exitPlaceDetail],
   )
 
   const handleOver = useCallback((e: { stopPropagation: () => void }) => {

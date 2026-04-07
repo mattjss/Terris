@@ -3,6 +3,8 @@ import { useAtlasStore } from '@/store/atlas'
 import { useTerrisStore } from '@/state/useTerrisStore'
 import { TimeMinimap } from '@/ui/TimeMinimap'
 import {
+  EXPLORE_UI_MS_EARTH_PLANETARY,
+  EXPLORE_UI_MS_PLANETARY_COSMIC,
   EXPLORE_UI_MS_SHORT,
   exploreUiTransition,
 } from '@/ui/exploreUiMotion'
@@ -27,7 +29,9 @@ export function ExploreBottomRail() {
     mode === 'cosmic' ? 'cosmic' : 'planetary'
 
   const ease = reducedMotion ? 'linear' : 'cubic-bezier(0.22, 1, 0.36, 1)'
-  const dur = reducedMotion ? 120 : 2100
+  const dur = reducedMotion
+    ? 120
+    : Math.max(EXPLORE_UI_MS_EARTH_PLANETARY, EXPLORE_UI_MS_PLANETARY_COSMIC)
   const tf = `opacity ${dur}ms ${ease}, transform ${dur}ms ${ease}, filter ${dur}ms ${ease}`
 
   const showEarthMinimap = wEarth > 0.02
@@ -55,9 +59,7 @@ export function ExploreBottomRail() {
           style={{
             opacity: wEarth,
             transform: `scale(${0.86 + 0.14 * wEarth}) translateY(${(1 - wEarth) * 10}px)`,
-            filter: reducedMotion
-              ? undefined
-              : `blur(${Math.max(0, (1 - wEarth) * 2.5)}px)`,
+            filter: undefined,
             transition: tf,
             pointerEvents: wEarth < 0.35 ? 'none' : 'auto',
           }}

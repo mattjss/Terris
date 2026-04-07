@@ -16,8 +16,9 @@ export const PLANETARY_TO_EARTH_DISTANCE = 12.5
 export const COSMIC_TO_PLANETARY_DISTANCE = 38
 
 /** Scripted transition duration (seconds) for mode changes. */
-export const EXPLORE_TRANSITION_DURATION_EARTH_PLANETARY = 2.1
-export const EXPLORE_TRANSITION_DURATION_PLANETARY_COSMIC = 2.45
+/** Seconds — keep in sync with `EXPLORE_UI_MS_*` in `exploreUiMotion.ts` (derived). */
+export const EXPLORE_TRANSITION_DURATION_EARTH_PLANETARY = 1.35
+export const EXPLORE_TRANSITION_DURATION_PLANETARY_COSMIC = 1.65
 
 /** Camera distance after Earth → planetary transition completes (same radial direction). */
 export const PLANETARY_VIEW_CAMERA_DISTANCE = 15.8

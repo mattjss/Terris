@@ -1,5 +1,4 @@
 import { useEffect, useId, useState } from 'react'
-import { Button } from '@base-ui/react/button'
 import { checkpointKey } from '@/state/learningJournalTypes'
 import { useLearningJournalStore } from '@/state/useLearningJournalStore'
 
@@ -66,9 +65,9 @@ export function PathwayCheckpointSection({
         onChange={(e) => setWhatLearned(e.target.value)}
         onBlur={persist}
       />
-      <Button type="button" className="terris-pathway-checkpoint__save" onClick={persist}>
+      <button type="button" className="terris-pathway-checkpoint__save" onClick={persist}>
         Save note
-      </Button>
+      </button>
     </div>
   )
 }

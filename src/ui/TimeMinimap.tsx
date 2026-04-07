@@ -285,6 +285,14 @@ export function TimeMinimap() {
         </div>
       </div>
 
+      {uiExpanded ? (
+        <p className="terris-time-minimap__hint">
+          {isLocal
+            ? `Within ${focusedMacro?.label} · double-click to snap`
+            : 'Drag · double-click an era for sub-periods'}
+        </p>
+      ) : null}
+
       <div className="terris-time-minimap__rail" aria-hidden>
         <div className="terris-time-minimap__rail-inner">
           {TIME_ERAS.map((era) => {
@@ -309,14 +317,6 @@ export function TimeMinimap() {
           />
         </div>
       </div>
-
-      {uiExpanded ? (
-        <p className="terris-time-minimap__hint">
-          {isLocal
-            ? `Within ${focusedMacro?.label} · double-click to snap`
-            : 'Drag · double-click an era for sub-periods'}
-        </p>
-      ) : null}
 
       <div
         ref={trackRef}

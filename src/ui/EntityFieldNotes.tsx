@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import { Bookmark, BookmarkCheck } from 'lucide-react'
-import { Button } from '@base-ui/react/button'
 import type { TerrisEntity } from '@/data/types/terrisEntity'
 import { useLearningJournalStore } from '@/state/useLearningJournalStore'
 
@@ -48,7 +47,7 @@ export function EntityFieldNotes({ entity }: { entity: TerrisEntity }) {
         <span className="terris-field-notes__hint">
           Private to this browser — your exploration log.
         </span>
-        <Button
+        <button
           type="button"
           className={
             'terris-field-notes__bookmark' + (bookmarked ? ' terris-field-notes__bookmark--on' : '')
@@ -63,7 +62,7 @@ export function EntityFieldNotes({ entity }: { entity: TerrisEntity }) {
             <Bookmark className="size-4" aria-hidden />
           )}
           <span>{bookmarked ? 'Saved' : 'Save'}</span>
-        </Button>
+        </button>
       </div>
 
       <div className="terris-field-notes__collections">
@@ -83,7 +82,7 @@ export function EntityFieldNotes({ entity }: { entity: TerrisEntity }) {
               </option>
             ))}
           </select>
-          <Button
+          <button
             type="button"
             className="terris-field-notes__add-btn"
             onClick={() => {
@@ -92,7 +91,7 @@ export function EntityFieldNotes({ entity }: { entity: TerrisEntity }) {
             }}
           >
             Add
-          </Button>
+          </button>
         </div>
         {collectionsWithEntity.length > 0 ? (
           <ul className="terris-field-notes__chips">

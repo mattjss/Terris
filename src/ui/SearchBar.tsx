@@ -69,7 +69,8 @@ export function SearchBar({
       role="search"
       style={{
         opacity: barOpacity,
-        transition: 'opacity 2100ms cubic-bezier(0.22, 1, 0.36, 1)',
+        transition:
+          'opacity var(--terris-motion-ms-overlay) var(--terris-motion-ease-out)',
       }}
     >
       <button
@@ -79,18 +80,18 @@ export function SearchBar({
         onClick={onOpen}
       >
         <span className="terris-search-bar__icon" aria-hidden>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
             <path
               d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"
               stroke="currentColor"
-              strokeWidth="1.5"
+              strokeWidth="1.35"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
             <path
               d="M16.5 16.5 21 21"
               stroke="currentColor"
-              strokeWidth="1.5"
+              strokeWidth="1.35"
               strokeLinecap="round"
               strokeLinejoin="round"
             />

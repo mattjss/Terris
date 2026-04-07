@@ -1,3 +1,8 @@
+import {
+  EXPLORE_TRANSITION_DURATION_EARTH_PLANETARY,
+  EXPLORE_TRANSITION_DURATION_PLANETARY_COSMIC,
+} from '@/components/globe/exploreScaleConstants'
+
 export {
   SEARCH_PLACEHOLDER_COSMIC,
   SEARCH_PLACEHOLDER_EARTH,
@@ -12,8 +17,15 @@ export {
 /** Primary ease — matches TimeMinimap playhead / scene bridge. */
 export const EXPLORE_UI_EASE_CSS = 'cubic-bezier(0.22, 1, 0.36, 1)'
 
-/** Matches `EXPLORE_TRANSITION_DURATION_EARTH_PLANETARY` (ms). */
-export const EXPLORE_UI_MS_EARTH_PLANETARY = 2100
+/** Matches `EXPLORE_TRANSITION_DURATION_EARTH_PLANETARY` (seconds → ms). */
+export const EXPLORE_UI_MS_EARTH_PLANETARY = Math.round(
+  EXPLORE_TRANSITION_DURATION_EARTH_PLANETARY * 1000,
+)
+
+/** Matches planetary ↔ cosmic camera bridge. */
+export const EXPLORE_UI_MS_PLANETARY_COSMIC = Math.round(
+  EXPLORE_TRANSITION_DURATION_PLANETARY_COSMIC * 1000,
+)
 
 /** Short layer for sheet / micro cross-fades (ms). */
 export const EXPLORE_UI_MS_SHORT = 420

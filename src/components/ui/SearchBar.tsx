@@ -1,6 +1,10 @@
 import { useMemo, useRef, useEffect, useCallback, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { formatYear, getTypeColor } from '@/data/historical'
+import {
+  formatYear,
+  getTypeColor,
+  type HistoricalEntity,
+} from '@/data/historical'
 import { useAtlasStore } from '@/store/atlas'
 import { useTerrisStore } from '@/state/useTerrisStore'
 import { useEntities } from '@/hooks/useEntities'
@@ -28,7 +32,7 @@ export function SearchBar() {
     enabled: Boolean(api && debounced.length > 0),
     queryFn: async () => {
       const r = await searchEntitiesApi(debounced)
-      return r ?? []
+      return (r ?? []) as unknown as HistoricalEntity[]
     },
     staleTime: 30_000,
   })
@@ -94,10 +98,10 @@ export function SearchBar() {
       className="relative w-full max-w-[320px] max-md:max-w-none"
     >
       <div
-        className="flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors duration-150"
+        className="flex items-center gap-2 px-3 py-1.5 rounded-none border transition-colors duration-150"
         style={{
-          background: searchOpen ? 'rgba(8,10,16,0.8)' : 'rgba(8,10,16,0.5)',
-          backdropFilter: 'blur(20px)',
+          background: searchOpen ? 'rgba(8,10,16,0.95)' : 'rgba(8,10,16,0.85)',
+          backdropFilter: 'none',
           borderColor: searchOpen
             ? 'rgba(255,255,255,0.08)'
             : 'rgba(255,255,255,0.04)',
@@ -146,12 +150,12 @@ export function SearchBar() {
 
       {searchOpen && results.length > 0 && (
         <div
-          className="absolute top-full left-0 right-0 mt-1 rounded-lg overflow-hidden z-50 animate-[fadeSlideUp_0.15s_ease-out]"
+          className="absolute top-full left-0 right-0 mt-1 rounded-none overflow-hidden z-50 animate-[fadeSlideUp_0.15s_ease-out]"
           style={{
-            background: 'rgba(8,10,16,0.92)',
-            backdropFilter: 'blur(24px)',
-            border: '1px solid rgba(255,255,255,0.06)',
-            boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
+            background: 'rgba(8,10,16,0.98)',
+            backdropFilter: 'none',
+            border: '1px solid rgba(255,255,255,0.1)',
+            boxShadow: 'none',
           }}
           role="listbox"
           aria-label="Search results"
@@ -168,7 +172,7 @@ export function SearchBar() {
               "
             >
               <span
-                className="shrink-0 w-[6px] h-[6px] rounded-full"
+                className="shrink-0 w-[6px] h-[6px] rounded-none"
                 style={{ background: getTypeColor(entity.type) }}
               />
               <div className="min-w-0 flex-1">
@@ -192,11 +196,11 @@ export function SearchBar() {
 
       {searchOpen && searchQuery.trim() && results.length === 0 && (
         <div
-          className="absolute top-full left-0 right-0 mt-1 rounded-lg overflow-hidden z-50"
+          className="absolute top-full left-0 right-0 mt-1 rounded-none overflow-hidden z-50"
           style={{
-            background: 'rgba(8,10,16,0.92)',
-            backdropFilter: 'blur(24px)',
-            border: '1px solid rgba(255,255,255,0.06)',
+            background: 'rgba(8,10,16,0.98)',
+            backdropFilter: 'none',
+            border: '1px solid rgba(255,255,255,0.1)',
           }}
         >
           <p className="px-3 py-3 text-[10px] text-[--color-text-muted] text-center">

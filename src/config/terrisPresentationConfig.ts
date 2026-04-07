@@ -20,8 +20,7 @@ const PLACE_SHEET_TABS = {
 }
 
 /** Single search field — all scales (Earth / planetary / cosmic) in one flow. */
-export const TERRIS_UNIFIED_SEARCH_PLACEHOLDER =
-  'Search places, people, stories, and worlds…'
+export const TERRIS_UNIFIED_SEARCH_PLACEHOLDER = 'Search the atlas…'
 
 /** Legacy Earth-only line; prefer `TERRIS_UNIFIED_SEARCH_PLACEHOLDER`. */
 export const TERRIS_SEARCH_BAR_HINT_EARTH = TERRIS_UNIFIED_SEARCH_PLACEHOLDER

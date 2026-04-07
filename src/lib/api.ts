@@ -1,4 +1,8 @@
-import type { HistoricalEntity } from '@/data/historical'
+import type {
+  AiSearchResponse,
+  AiSummarizeResponse,
+  EntityJsonPayload,
+} from '@/contracts/serverPayload'
 
 export function getApiBase(): string | undefined {
   const raw = import.meta.env.VITE_API_URL
@@ -7,13 +11,13 @@ export function getApiBase(): string | undefined {
   return t.length > 0 ? t.replace(/\/$/, '') : undefined
 }
 
-export async function fetchEntitiesFromApi(): Promise<HistoricalEntity[] | null> {
+export async function fetchEntitiesFromApi(): Promise<EntityJsonPayload[] | null> {
   const base = getApiBase()
   if (!base) return null
   try {
     const r = await fetch(`${base}/entities`)
     if (!r.ok) return null
-    return (await r.json()) as HistoricalEntity[]
+    return (await r.json()) as EntityJsonPayload[]
   } catch {
     return null
   }
@@ -21,7 +25,7 @@ export async function fetchEntitiesFromApi(): Promise<HistoricalEntity[] | null>
 
 export async function searchEntitiesApi(
   q: string,
-): Promise<HistoricalEntity[] | null> {
+): Promise<EntityJsonPayload[] | null> {
   const base = getApiBase()
   if (!base || !q.trim()) return null
   try {
@@ -29,16 +33,13 @@ export async function searchEntitiesApi(
       `${base}/search?q=${encodeURIComponent(q.trim())}`,
     )
     if (!r.ok) return null
-    return (await r.json()) as HistoricalEntity[]
+    return (await r.json()) as EntityJsonPayload[]
   } catch {
     return null
   }
 }
 
-export async function aiSearchApi(q: string): Promise<{
-  results: HistoricalEntity[]
-  method: 'vector' | 'llm'
-} | null> {
+export async function aiSearchApi(q: string): Promise<AiSearchResponse | null> {
   const base = getApiBase()
   if (!base || !q.trim()) return null
   try {
@@ -48,11 +49,7 @@ export async function aiSearchApi(q: string): Promise<{
       body: JSON.stringify({ q: q.trim() }),
     })
     if (!r.ok) return null
-    const data = (await r.json()) as {
-      results: HistoricalEntity[]
-      method: 'vector' | 'llm'
-    }
-    return data
+    return (await r.json()) as AiSearchResponse
   } catch {
     return null
   }
@@ -62,7 +59,7 @@ export async function aiSummarizeApi(body: {
   entityId?: string
   year?: number
   q?: string
-}): Promise<{ text: string; disclaimer: string } | null> {
+}): Promise<AiSummarizeResponse | null> {
   const base = getApiBase()
   if (!base) return null
   try {
@@ -72,7 +69,7 @@ export async function aiSummarizeApi(body: {
       body: JSON.stringify(body),
     })
     if (!r.ok) return null
-    return (await r.json()) as { text: string; disclaimer: string }
+    return (await r.json()) as AiSummarizeResponse
   } catch {
     return null
   }

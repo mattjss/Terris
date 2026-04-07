@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import { Bookmark, BookmarkCheck } from 'lucide-react'
-import { Button } from '@base-ui/react/button'
 import { getMockEntityById } from '@/data/services/entityService'
 import { getPathwayById, listLearningPathways } from '@/data/learning/seedPathways'
 import { useExploreScaleStore } from '@/state/exploreScaleStore'
@@ -92,7 +91,7 @@ export function GuidedPathwayDock() {
   return (
     <div className="terris-guided-dock">
       <div className="terris-guided-dock__header">
-        <Button
+        <button
           type="button"
           className="terris-guided-dock__eyebrow-btn"
           onClick={() => setOpen((o) => !o)}
@@ -103,13 +102,13 @@ export function GuidedPathwayDock() {
           <span className="terris-guided-dock__chevron" aria-hidden>
             {open ? '▾' : '▸'}
           </span>
-        </Button>
+        </button>
         {pathway ? (
           <>
             <span className="terris-guided-dock__pathway-pill" title={pathway.description}>
               {pathway.title}
             </span>
-            <Button
+            <button
               type="button"
               className={
                 'terris-guided-dock__pathway-star' +
@@ -124,7 +123,7 @@ export function GuidedPathwayDock() {
               ) : (
                 <Bookmark className="size-4" aria-hidden />
               )}
-            </Button>
+            </button>
           </>
         ) : null}
       </div>
@@ -152,21 +151,21 @@ export function GuidedPathwayDock() {
                     </div>
                     <p className="terris-guided-dock__pathway-desc">{p.description}</p>
                     <div className="terris-guided-dock__pathway-actions">
-                      <Button
+                      <button
                         type="button"
                         className="terris-guided-dock__start"
                         onClick={() => onStart(p.id)}
                       >
                         Start
-                      </Button>
-                      <Button
+                      </button>
+                      <button
                         type="button"
                         className="terris-guided-dock__save-journey"
                         onClick={() => toggleSavedPathway(p.id)}
                         aria-pressed={savedPathwayIds.includes(p.id)}
                       >
                         {savedPathwayIds.includes(p.id) ? 'Saved' : 'Save journey'}
-                      </Button>
+                      </button>
                     </div>
                   </li>
                 ))}
@@ -236,22 +235,22 @@ export function GuidedPathwayDock() {
               </div>
 
               <div className="terris-guided-dock__nav">
-                <Button
+                <button
                   type="button"
                   className="terris-guided-dock__btn terris-guided-dock__btn--ghost"
                   onClick={() => previousGuidedStep()}
                   disabled={stepIndex <= 0}
                 >
                   Previous
-                </Button>
-                <Button
+                </button>
+                <button
                   type="button"
                   className="terris-guided-dock__btn terris-guided-dock__btn--primary"
                   onClick={() => advanceGuidedStep()}
                   disabled={stepIndex >= total - 1}
                 >
                   {stepIndex >= total - 1 ? 'At last step' : 'Next step'}
-                </Button>
+                </button>
               </div>
 
               {selectedEntity ? (
@@ -262,14 +261,14 @@ export function GuidedPathwayDock() {
                 />
               ) : null}
 
-              <Button
+              <button
                 type="button"
                 className="terris-guided-dock__all-toggle"
                 onClick={() => setShowAllSteps((s) => !s)}
                 aria-expanded={showAllSteps}
               >
                 {showAllSteps ? 'Hide all steps' : 'See all steps'}
-              </Button>
+              </button>
 
               {showAllSteps ? (
                 <ol className="terris-guided-dock__step-jump" aria-label="Jump to step">
@@ -291,9 +290,9 @@ export function GuidedPathwayDock() {
                 </ol>
               ) : null}
 
-              <Button type="button" className="terris-guided-dock__leave" onClick={onLeave}>
+              <button type="button" className="terris-guided-dock__leave" onClick={onLeave}>
                 Leave journey
-              </Button>
+              </button>
             </div>
           )}
         </div>

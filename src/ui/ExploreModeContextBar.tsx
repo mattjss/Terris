@@ -1,5 +1,9 @@
 import { useExploreScaleStore } from '@/state/exploreScaleStore'
 import { useTerrisStore } from '@/state/useTerrisStore'
+import {
+  EXPLORE_UI_MS_SHORT,
+  EXPLORE_UI_EASE_CSS,
+} from '@/ui/exploreUiMotion'
 
 const COPY = {
   earth: { title: 'Earth', subtitle: 'Surface & timeline' },
@@ -29,7 +33,7 @@ export function ExploreModeContextBar() {
       }
       style={{
         opacity: calmOpacity,
-        transition: 'opacity 2100ms cubic-bezier(0.22, 1, 0.36, 1)',
+        transition: `opacity ${EXPLORE_UI_MS_SHORT}ms ${EXPLORE_UI_EASE_CSS}`,
       }}
     >
       <div className="terris-explore-mode__eyebrow">Scale</div>

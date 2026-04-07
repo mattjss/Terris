@@ -1,6 +1,10 @@
 import { useCallback, useId, useMemo, useState } from 'react'
-import { Button } from '@base-ui/react/button'
-import { Dialog } from '@base-ui/react/dialog'
+import {
+  TerrisModalBackdrop,
+  TerrisModalPanel,
+  TerrisModalRoot,
+  TerrisModalViewport,
+} from '@/ui/primitives'
 import { getMockEntityById } from '@/data/services/entityService'
 import { getPathwayById } from '@/data/learning/seedPathways'
 import { useExploreScaleStore } from '@/state/exploreScaleStore'
@@ -60,17 +64,19 @@ export function ContinueLearningBanner() {
 
   if (!hydrated) return null
 
+  const journalTitleId = `${uid}-journal-title`
+
   return (
     <div className="terris-continue-learning">
       <div className="terris-continue-learning__row">
         {resumeLabel ? (
-          <Button type="button" className="terris-continue-learning__resume" onClick={onResume}>
+          <button type="button" className="terris-continue-learning__resume" onClick={onResume}>
             Continue with <strong>{resumeLabel}</strong>
-          </Button>
+          </button>
         ) : (
           <span className="terris-continue-learning__idle">Pick a place or journey to begin.</span>
         )}
-        <Button
+        <button
           type="button"
           className="terris-continue-learning__log-btn"
           onClick={() => setOpen(true)}
@@ -78,7 +84,7 @@ export function ContinueLearningBanner() {
           aria-controls={`${uid}-journal-dialog`}
         >
           Exploration log
-        </Button>
+        </button>
         {!persistenceAvailable ? (
           <span className="terris-continue-learning__warn" title="Storage unavailable">
             In-memory only
@@ -86,111 +92,111 @@ export function ContinueLearningBanner() {
         ) : null}
       </div>
 
-      <Dialog.Root open={open} onOpenChange={setOpen}>
-        <Dialog.Portal>
-          <Dialog.Backdrop className="terris-search-dialog-backdrop" />
-          <Dialog.Viewport className="terris-search-dialog-viewport">
-            <Dialog.Popup
-              className="terris-journal-dialog panel"
-              id={`${uid}-journal-dialog`}
-              initialFocus={undefined}
-            >
-              <Dialog.Title className="terris-journal-dialog__title">Exploration log</Dialog.Title>
-              <p className="terris-journal-dialog__lede">
-                Recent stops, saved places, and journeys — like a field journal, not a gradebook.
-              </p>
+      <TerrisModalRoot open={open} onOpenChange={setOpen}>
+        <TerrisModalBackdrop className="terris-search-dialog-backdrop" />
+        <TerrisModalViewport className="terris-search-dialog-viewport">
+          <TerrisModalPanel
+            className="terris-journal-dialog panel"
+            id={`${uid}-journal-dialog`}
+            aria-labelledby={journalTitleId}
+          >
+            <h2 id={journalTitleId} className="terris-journal-dialog__title">
+              Exploration log
+            </h2>
+            <p className="terris-journal-dialog__lede">
+              Recent stops, saved places, and journeys — like a field journal, not a gradebook.
+            </p>
 
-              <section className="terris-journal-dialog__section">
-                <h3 className="terris-journal-dialog__h">Recently opened</h3>
-                {recentEntityIds.length === 0 ? (
-                  <p className="terris-journal-dialog__empty">Nothing here yet.</p>
-                ) : (
-                  <ul className="terris-journal-dialog__list">
-                    {recentEntityIds.slice(0, 12).map((id) => {
-                      const e = getMockEntityById(id)
-                      return (
-                        <li key={id}>
-                          <button
-                            type="button"
-                            className="terris-journal-dialog__link"
-                            onClick={() => onOpenEntity(id)}
-                          >
-                            {e?.name ?? id}
-                          </button>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                )}
-              </section>
-
-              <section className="terris-journal-dialog__section">
-                <h3 className="terris-journal-dialog__h">Saved places</h3>
-                {bookmarkedEntityIds.length === 0 ? (
-                  <p className="terris-journal-dialog__empty">Use “Save” on a place sheet.</p>
-                ) : (
-                  <ul className="terris-journal-dialog__list">
-                    {bookmarkedEntityIds.map((id) => {
-                      const e = getMockEntityById(id)
-                      return (
-                        <li key={id}>
-                          <button
-                            type="button"
-                            className="terris-journal-dialog__link"
-                            onClick={() => onOpenEntity(id)}
-                          >
-                            {e?.name ?? id}
-                          </button>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                )}
-              </section>
-
-              <section className="terris-journal-dialog__section">
-                <h3 className="terris-journal-dialog__h">Saved journeys</h3>
-                {savedPathwayIds.length === 0 ? (
-                  <p className="terris-journal-dialog__empty">Star a pathway from the journey picker.</p>
-                ) : (
-                  <ul className="terris-journal-dialog__list">
-                    {savedPathwayIds.map((pid) => {
-                      const p = getPathwayById(pid)
-                      return (
-                        <li key={pid}>
-                          <span className="terris-journal-dialog__static">{p?.title ?? pid}</span>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                )}
-              </section>
-
-              <section className="terris-journal-dialog__section">
-                <h3 className="terris-journal-dialog__h">Collections</h3>
-                <ul className="terris-journal-dialog__collections">
-                  {collections.map((c) => (
-                    <li key={c.id}>
-                      <span className="terris-journal-dialog__static">{c.name}</span>
-                      <span className="terris-journal-dialog__meta">
-                        {c.entityIds.length} places · {c.pathwayIds.length} journeys
-                      </span>
-                    </li>
-                  ))}
+            <section className="terris-journal-dialog__section">
+              <h3 className="terris-journal-dialog__h">Recently opened</h3>
+              {recentEntityIds.length === 0 ? (
+                <p className="terris-journal-dialog__empty">Nothing here yet.</p>
+              ) : (
+                <ul className="terris-journal-dialog__list">
+                  {recentEntityIds.slice(0, 12).map((id) => {
+                    const e = getMockEntityById(id)
+                    return (
+                      <li key={id}>
+                        <button
+                          type="button"
+                          className="terris-journal-dialog__link"
+                          onClick={() => onOpenEntity(id)}
+                        >
+                          {e?.name ?? id}
+                        </button>
+                      </li>
+                    )
+                  })}
                 </ul>
-              </section>
+              )}
+            </section>
 
-              <Button
-                type="button"
-                className="terris-journal-dialog__close"
-                onClick={() => setOpen(false)}
-              >
-                Close
-              </Button>
-            </Dialog.Popup>
-          </Dialog.Viewport>
-        </Dialog.Portal>
-      </Dialog.Root>
+            <section className="terris-journal-dialog__section">
+              <h3 className="terris-journal-dialog__h">Saved places</h3>
+              {bookmarkedEntityIds.length === 0 ? (
+                <p className="terris-journal-dialog__empty">Use “Save” on a place sheet.</p>
+              ) : (
+                <ul className="terris-journal-dialog__list">
+                  {bookmarkedEntityIds.map((id) => {
+                    const e = getMockEntityById(id)
+                    return (
+                      <li key={id}>
+                        <button
+                          type="button"
+                          className="terris-journal-dialog__link"
+                          onClick={() => onOpenEntity(id)}
+                        >
+                          {e?.name ?? id}
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </section>
+
+            <section className="terris-journal-dialog__section">
+              <h3 className="terris-journal-dialog__h">Saved journeys</h3>
+              {savedPathwayIds.length === 0 ? (
+                <p className="terris-journal-dialog__empty">Star a pathway from the journey picker.</p>
+              ) : (
+                <ul className="terris-journal-dialog__list">
+                  {savedPathwayIds.map((pid) => {
+                    const p = getPathwayById(pid)
+                    return (
+                      <li key={pid}>
+                        <span className="terris-journal-dialog__static">{p?.title ?? pid}</span>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </section>
+
+            <section className="terris-journal-dialog__section">
+              <h3 className="terris-journal-dialog__h">Collections</h3>
+              <ul className="terris-journal-dialog__collections">
+                {collections.map((c) => (
+                  <li key={c.id}>
+                    <span className="terris-journal-dialog__static">{c.name}</span>
+                    <span className="terris-journal-dialog__meta">
+                      {c.entityIds.length} places · {c.pathwayIds.length} journeys
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            <button
+              type="button"
+              className="terris-journal-dialog__close"
+              onClick={() => setOpen(false)}
+            >
+              Close
+            </button>
+          </TerrisModalPanel>
+        </TerrisModalViewport>
+      </TerrisModalRoot>
     </div>
   )
 }
